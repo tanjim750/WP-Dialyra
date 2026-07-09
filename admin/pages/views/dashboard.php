@@ -22,34 +22,34 @@ if ( ! defined( 'WPINC' ) ) {
 
 		<div class="wp-dialyra-dashboard__actions">
 			<a class="wp-dialyra-button wp-dialyra-button--ghost" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=login' ) ); ?>"><?php esc_html_e( 'Reconnect', 'wp-dialyra' ); ?></a>
-			<a class="wp-dialyra-button wp-dialyra-button--primary" href="#"><?php esc_html_e( 'Test Call', 'wp-dialyra' ); ?></a>
+			<a class="wp-dialyra-button wp-dialyra-button--primary" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=test-tools' ) ); ?>"><?php esc_html_e( 'Test Call', 'wp-dialyra' ); ?></a>
 		</div>
 	</div>
 
 	<div class="wp-dialyra-dashboard__stats" aria-label="<?php esc_attr_e( 'Dialyra dashboard summary', 'wp-dialyra' ); ?>">
-		<article class="wp-dialyra-stat wp-dialyra-stat--blue">
+		<a class="wp-dialyra-stat wp-dialyra-stat--blue" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=call-history' ) ); ?>">
 			<span><?php esc_html_e( 'Today’s Calls', 'wp-dialyra' ); ?></span>
 			<strong>42</strong>
 			<small><?php esc_html_e( '+12% from yesterday', 'wp-dialyra' ); ?></small>
-		</article>
+		</a>
 
-		<article class="wp-dialyra-stat wp-dialyra-stat--mint">
+		<a class="wp-dialyra-stat wp-dialyra-stat--mint" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=call-history' ) ); ?>">
 			<span><?php esc_html_e( 'Confirmed Orders', 'wp-dialyra' ); ?></span>
 			<strong>28</strong>
 			<small><?php esc_html_e( '66.7% confirmation rate', 'wp-dialyra' ); ?></small>
-		</article>
+		</a>
 
-		<article class="wp-dialyra-stat wp-dialyra-stat--gold">
+		<a class="wp-dialyra-stat wp-dialyra-stat--gold" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=queue-calls' ) ); ?>">
 			<span><?php esc_html_e( 'Waiting Queue', 'wp-dialyra' ); ?></span>
 			<strong>7</strong>
 			<small><?php esc_html_e( 'Next slot in 03:20', 'wp-dialyra' ); ?></small>
-		</article>
+		</a>
 
-		<article class="wp-dialyra-stat wp-dialyra-stat--rose">
+		<a class="wp-dialyra-stat wp-dialyra-stat--rose" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=queue-calls' ) ); ?>">
 			<span><?php esc_html_e( 'Failed / Retry', 'wp-dialyra' ); ?></span>
 			<strong>5</strong>
 			<small><?php esc_html_e( '3 retries scheduled', 'wp-dialyra' ); ?></small>
-		</article>
+		</a>
 	</div>
 
 	<div class="wp-dialyra-dashboard__grid">
@@ -59,7 +59,7 @@ if ( ! defined( 'WPINC' ) ) {
 					<p class="wp-dialyra-eyebrow"><?php esc_html_e( 'Automation Flow', 'wp-dialyra' ); ?></p>
 					<h3><?php esc_html_e( 'Order calling pipeline', 'wp-dialyra' ); ?></h3>
 				</div>
-				<span class="wp-dialyra-chip wp-dialyra-chip--active"><?php esc_html_e( 'Running', 'wp-dialyra' ); ?></span>
+				<a class="wp-dialyra-chip wp-dialyra-chip--active" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=flows' ) ); ?>"><?php esc_html_e( 'Running', 'wp-dialyra' ); ?></a>
 			</div>
 
 			<div class="wp-dialyra-flow">
@@ -92,6 +92,7 @@ if ( ! defined( 'WPINC' ) ) {
 					<p class="wp-dialyra-eyebrow"><?php esc_html_e( 'Balance', 'wp-dialyra' ); ?></p>
 					<h3><?php esc_html_e( 'Call credit', 'wp-dialyra' ); ?></h3>
 				</div>
+				<a class="wp-dialyra-chip" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=settings' ) ); ?>"><?php esc_html_e( 'Settings', 'wp-dialyra' ); ?></a>
 			</div>
 			<strong>৳ 1,240.50</strong>
 			<div class="wp-dialyra-meter" aria-hidden="true"><span style="width: 68%;"></span></div>
@@ -104,7 +105,7 @@ if ( ! defined( 'WPINC' ) ) {
 					<p class="wp-dialyra-eyebrow"><?php esc_html_e( 'Live Queue', 'wp-dialyra' ); ?></p>
 					<h3><?php esc_html_e( 'Calls waiting', 'wp-dialyra' ); ?></h3>
 				</div>
-				<span class="wp-dialyra-chip"><?php esc_html_e( 'FIFO', 'wp-dialyra' ); ?></span>
+				<a class="wp-dialyra-chip" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=queue-calls' ) ); ?>"><?php esc_html_e( 'FIFO', 'wp-dialyra' ); ?></a>
 			</div>
 
 			<ul class="wp-dialyra-queue">
@@ -132,6 +133,7 @@ if ( ! defined( 'WPINC' ) ) {
 					<p class="wp-dialyra-eyebrow"><?php esc_html_e( 'Performance', 'wp-dialyra' ); ?></p>
 					<h3><?php esc_html_e( 'Call outcomes', 'wp-dialyra' ); ?></h3>
 				</div>
+				<a class="wp-dialyra-chip" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=call-history' ) ); ?>"><?php esc_html_e( 'View all', 'wp-dialyra' ); ?></a>
 			</div>
 
 			<div class="wp-dialyra-rings">
@@ -162,7 +164,7 @@ if ( ! defined( 'WPINC' ) ) {
 					<p class="wp-dialyra-eyebrow"><?php esc_html_e( 'Departments', 'wp-dialyra' ); ?></p>
 					<h3><?php esc_html_e( 'Routing groups', 'wp-dialyra' ); ?></h3>
 				</div>
-				<span class="wp-dialyra-chip"><?php esc_html_e( 'View all', 'wp-dialyra' ); ?></span>
+				<a class="wp-dialyra-chip" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=departments' ) ); ?>"><?php esc_html_e( 'View all', 'wp-dialyra' ); ?></a>
 			</div>
 
 			<div class="wp-dialyra-department-card">
@@ -201,7 +203,7 @@ if ( ! defined( 'WPINC' ) ) {
 					<p class="wp-dialyra-eyebrow"><?php esc_html_e( 'Recent Activity', 'wp-dialyra' ); ?></p>
 					<h3><?php esc_html_e( 'Latest call history', 'wp-dialyra' ); ?></h3>
 				</div>
-				<a href="#"><?php esc_html_e( 'View all', 'wp-dialyra' ); ?></a>
+				<a href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=call-history' ) ); ?>"><?php esc_html_e( 'View all', 'wp-dialyra' ); ?></a>
 			</div>
 
 			<div class="wp-dialyra-table" role="table" aria-label="<?php esc_attr_e( 'Latest Dialyra calls', 'wp-dialyra' ); ?>">
@@ -242,7 +244,7 @@ if ( ! defined( 'WPINC' ) ) {
 					<p class="wp-dialyra-eyebrow"><?php esc_html_e( 'Agents', 'wp-dialyra' ); ?></p>
 					<h3><?php esc_html_e( 'Support agent directory', 'wp-dialyra' ); ?></h3>
 				</div>
-				<span class="wp-dialyra-chip"><?php esc_html_e( 'View all', 'wp-dialyra' ); ?></span>
+				<a class="wp-dialyra-chip" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=agents' ) ); ?>"><?php esc_html_e( 'View all', 'wp-dialyra' ); ?></a>
 			</div>
 
 			<div class="wp-dialyra-data-table wp-dialyra-data-table--agents" role="table" aria-label="<?php esc_attr_e( 'Dialyra agents', 'wp-dialyra' ); ?>">

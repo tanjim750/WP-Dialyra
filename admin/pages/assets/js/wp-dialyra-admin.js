@@ -29,4 +29,92 @@
 	 * practising this, we should strive to set a better example in our own work.
 	 */
 
+	$(function() {
+		var updateDynamicFields = function( $scope ) {
+			$scope.find( '[data-dialyra-dynamic-group], [data-dtmf-action]' ).addBack( '[data-dialyra-dynamic-group], [data-dtmf-action]' ).each(function() {
+				var $group = $( this );
+				var activeValues = [];
+
+				$group.find( '[data-dialyra-dynamic-select]' ).each(function() {
+					activeValues.push( String( $( this ).val() ) );
+				});
+
+				$group.find( '[data-dialyra-show-for]' ).each(function() {
+					var $field = $( this );
+					var allowedValues = String( $field.data( 'dialyraShowFor' ) ).split( /\s+/ );
+					var shouldShow = allowedValues.some(function( value ) {
+						return activeValues.indexOf( value ) !== -1;
+					});
+
+					$field.prop( 'hidden', ! shouldShow );
+				});
+			});
+		};
+
+		var refreshDtmfAction = function( $action, index ) {
+			$action.find( '[id]' ).each(function() {
+				var $item = $( this );
+				$item.attr( 'id', $item.attr( 'id' ).replace( /-\d+$/, '-' + index ) );
+			});
+
+			$action.find( '[for]' ).each(function() {
+				var $item = $( this );
+				$item.attr( 'for', $item.attr( 'for' ).replace( /-\d+$/, '-' + index ) );
+			});
+
+			$action.find( '[name]' ).each(function() {
+				var $item = $( this );
+				$item.attr( 'name', $item.attr( 'name' ).replace( /_\d+$/, '_' + index ) );
+			});
+		};
+
+		$( document ).on( 'change', '[data-dialyra-dynamic-select]', function() {
+			updateDynamicFields( $( this ).closest( '.wp-dialyra-flow-builder' ) );
+		});
+
+		$( document ).on( 'click', '#wp-dialyra-add-dtmf-action', function() {
+			var $list = $( '#wp-dialyra-dtmf-actions' );
+			var $template = $list.find( '[data-dtmf-action]' ).first();
+			var $clone = $template.clone( true, true );
+			var nextIndex = $list.find( '[data-dtmf-action]' ).length + 1;
+			var nextKey = Math.min( nextIndex, 9 );
+
+			refreshDtmfAction( $clone, nextIndex );
+			$clone.find( '.wp-dialyra-dtmf-actions__key select' ).val( String( nextKey ) );
+			$clone.find( 'input[type="text"]' ).val( '' );
+			$clone.find( 'select[name^="response_type"]' ).val( 'tts' );
+			$clone.find( 'select[name^="business_action"]' ).val( 'no_action' );
+			$clone.find( 'select[name^="next_step"]' ).val( 'hangup' );
+
+			$list.append( $clone );
+			updateDynamicFields( $clone );
+		});
+
+		$( document ).on( 'click', '[data-remove-dtmf-action]', function() {
+			var $actions = $( '#wp-dialyra-dtmf-actions [data-dtmf-action]' );
+
+			if ( $actions.length <= 1 ) {
+				return;
+			}
+
+			$( this ).closest( '[data-dtmf-action]' ).remove();
+		});
+
+		$( document ).on( 'click', '[data-dialyra-open-product-picker]', function() {
+			$( '[data-dialyra-product-picker]' ).prop( 'hidden', false );
+		});
+
+		$( document ).on( 'click', '[data-dialyra-close-product-picker]', function() {
+			$( '[data-dialyra-product-picker]' ).prop( 'hidden', true );
+		});
+
+		$( document ).on( 'keydown', function( event ) {
+			if ( 'Escape' === event.key ) {
+				$( '[data-dialyra-product-picker]' ).prop( 'hidden', true );
+			}
+		});
+
+		updateDynamicFields( $( document ) );
+	});
+
 })( jQuery );
