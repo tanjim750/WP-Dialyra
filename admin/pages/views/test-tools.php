@@ -97,5 +97,69 @@ if ( ! defined( 'WPINC' ) ) {
 				<button class="wp-dialyra-button wp-dialyra-button--primary" type="button"><?php esc_html_e( 'Send Test Webhook', 'wp-dialyra' ); ?></button>
 			</div>
 		</section>
+
+		<section class="wp-dialyra-test-card wp-dialyra-test-card--wide">
+			<div class="wp-dialyra-test-card__head">
+				<span aria-hidden="true">03</span>
+				<div>
+					<h3><?php esc_html_e( 'Agent call', 'wp-dialyra' ); ?></h3>
+					<p><?php esc_html_e( 'Originate a local SIP agent call to another extension or an external number.', 'wp-dialyra' ); ?></p>
+				</div>
+			</div>
+
+			<div class="wp-dialyra-agent-call-grid">
+				<div class="wp-dialyra-settings-row">
+					<label for="wp-dialyra-agent-from-extension"><?php esc_html_e( 'From extension', 'wp-dialyra' ); ?></label>
+					<input id="wp-dialyra-agent-from-extension" name="dialyra_agent_from_extension" type="text" value="1003">
+				</div>
+
+				<div class="wp-dialyra-settings-row">
+					<label for="wp-dialyra-agent-to-type"><?php esc_html_e( 'Target type', 'wp-dialyra' ); ?></label>
+					<select id="wp-dialyra-agent-to-type" name="dialyra_agent_to_type">
+						<option value="extension"><?php esc_html_e( 'Extension', 'wp-dialyra' ); ?></option>
+						<option value="external_number"><?php esc_html_e( 'External number', 'wp-dialyra' ); ?></option>
+					</select>
+				</div>
+
+				<div class="wp-dialyra-settings-row">
+					<label for="wp-dialyra-agent-to"><?php esc_html_e( 'To', 'wp-dialyra' ); ?></label>
+					<input id="wp-dialyra-agent-to" name="dialyra_agent_to" type="text" value="1004">
+				</div>
+
+				<div class="wp-dialyra-settings-row">
+					<label for="wp-dialyra-agent-timeout"><?php esc_html_e( 'Timeout seconds', 'wp-dialyra' ); ?></label>
+					<input id="wp-dialyra-agent-timeout" name="dialyra_agent_timeout_seconds" type="number" min="5" value="30">
+				</div>
+			</div>
+
+			<div class="wp-dialyra-agent-call-manual">
+				<div>
+					<span><?php esc_html_e( 'How agent calling works', 'wp-dialyra' ); ?></span>
+					<p><?php esc_html_e( 'Use this when you want one team member phone to ring first, then connect that agent to another agent or a customer number.', 'wp-dialyra' ); ?></p>
+				</div>
+
+				<ol>
+					<li><?php esc_html_e( 'Choose the agent phone that should start the call in From extension.', 'wp-dialyra' ); ?></li>
+					<li><?php esc_html_e( 'Choose Extension when calling another team member, or External number when calling a customer or outside number.', 'wp-dialyra' ); ?></li>
+					<li><?php esc_html_e( 'Enter the destination in To. For another agent use their extension, for a customer use their phone number.', 'wp-dialyra' ); ?></li>
+					<li><?php esc_html_e( 'Click Originate Agent Call. Dialyra rings the first agent, then connects the second side after pickup.', 'wp-dialyra' ); ?></li>
+				</ol>
+
+				<div class="wp-dialyra-agent-call-examples">
+					<strong><?php esc_html_e( 'Examples', 'wp-dialyra' ); ?></strong>
+					<span><?php esc_html_e( 'Agent to agent: From 1003 → To 1004', 'wp-dialyra' ); ?></span>
+					<span><?php esc_html_e( 'Agent to customer: From 1004 → To 09617179124', 'wp-dialyra' ); ?></span>
+				</div>
+
+				<div class="wp-dialyra-agent-call-requirement">
+					<strong><?php esc_html_e( 'Before testing', 'wp-dialyra' ); ?></strong>
+					<p><?php esc_html_e( 'The agent must be logged in to a SIP calling app with the extension username and password provided by Dialyra. Apps like Linphone can be used. If the agent is not logged in, their phone cannot ring.', 'wp-dialyra' ); ?></p>
+				</div>
+			</div>
+
+			<div class="wp-dialyra-test-card__footer">
+				<button class="wp-dialyra-button wp-dialyra-button--primary" type="button"><?php esc_html_e( 'Originate Agent Call', 'wp-dialyra' ); ?></button>
+			</div>
+		</section>
 	</div>
 </section>

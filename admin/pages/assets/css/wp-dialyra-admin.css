@@ -1104,6 +1104,10 @@
 	backdrop-filter: blur(14px);
 }
 
+.wp-dialyra-test-card--wide {
+	grid-column: 1 / -1;
+}
+
 .wp-dialyra-test-card__head {
 	display: flex;
 	gap: 14px;
@@ -1167,6 +1171,91 @@
 .wp-dialyra-test-summary strong {
 	color: var(--dialyra-ink);
 	font-size: 14px;
+}
+
+.wp-dialyra-agent-call-grid {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 14px;
+}
+
+.wp-dialyra-agent-call-manual {
+	display: grid;
+	grid-template-columns: minmax(0, 0.86fr) minmax(260px, 1fr) minmax(240px, 0.72fr);
+	gap: 14px;
+	margin-top: 18px;
+	padding: 16px;
+	border: 1px solid rgba(23, 105, 255, 0.12);
+	border-radius: 20px;
+	background:
+		radial-gradient(circle at 100% 0%, rgba(23, 105, 255, 0.08), transparent 36%),
+		rgba(255, 255, 255, 0.62);
+}
+
+.wp-dialyra-agent-call-manual span,
+.wp-dialyra-agent-call-manual strong {
+	display: block;
+	color: var(--dialyra-ink);
+	font-weight: 900;
+}
+
+.wp-dialyra-agent-call-manual > div:first-child span {
+	margin-bottom: 8px;
+	color: var(--dialyra-blue-dark);
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+
+.wp-dialyra-agent-call-manual p {
+	margin: 0;
+	color: var(--dialyra-muted);
+	font-weight: 700;
+	line-height: 1.55;
+}
+
+.wp-dialyra-agent-call-manual ol {
+	margin: 0;
+	padding-left: 20px;
+	color: var(--dialyra-muted);
+	font-weight: 700;
+	line-height: 1.65;
+}
+
+.wp-dialyra-agent-call-examples {
+	display: grid;
+	gap: 8px;
+	align-content: start;
+	padding: 14px;
+	border-radius: 16px;
+	background: rgba(33, 201, 151, 0.1);
+}
+
+.wp-dialyra-agent-call-requirement {
+	grid-column: 1 / -1;
+	padding: 14px;
+	border: 1px solid rgba(247, 183, 49, 0.2);
+	border-radius: 16px;
+	background: rgba(247, 183, 49, 0.1);
+}
+
+.wp-dialyra-agent-call-requirement strong {
+	margin-bottom: 6px;
+	color: #9a6700;
+}
+
+.wp-dialyra-agent-call-requirement p {
+	max-width: 980px;
+}
+
+.wp-dialyra-agent-call-examples strong {
+	color: #087f5b;
+}
+
+.wp-dialyra-agent-call-examples span {
+	color: var(--dialyra-muted);
+	font-size: 13px;
+	font-weight: 800;
 }
 
 .wp-dialyra-test-payload {
@@ -4855,6 +4944,8 @@
 	.wp-dialyra-weekly-hours,
 	.wp-dialyra-test-tools__grid,
 	.wp-dialyra-test-summary,
+	.wp-dialyra-agent-call-grid,
+	.wp-dialyra-agent-call-manual,
 	.wp-dialyra-status-map,
 	.wp-dialyra-flow {
 		grid-template-columns: 1fr;
