@@ -130,8 +130,8 @@ class Wp_Dialyra {
 		}
 		$this->plugin_name = 'wp-dialyra';
 
-		$this->define_api_services();
 		$this->load_dependencies();
+		$this->define_api_services();
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
@@ -179,6 +179,18 @@ class Wp_Dialyra {
 	 * @access   private
 	 */
 	private function load_dependencies() {
+
+		/**
+		 * Shared Dialyra API, auth, setup, and manager services.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/api/class-dialyra-api-config.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/api/class-dialyra-api-response.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/api/class-dialyra-api-client.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/api/class-dialyra-api-endpoints.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/auth/class-dialyra-auth-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/business/class-dialyra-business-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/flow/class-dialyra-flow-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/utils.php';
 
 		/**
 		 * The class responsible for orchestrating the actions and filters of the
