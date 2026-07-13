@@ -36,7 +36,13 @@
 				var activeValues = [];
 
 				$group.find( '[data-dialyra-dynamic-select]' ).each(function() {
-					activeValues.push( String( $( this ).val() ) );
+					var $control = $( this );
+
+					if ( $control.is( ':radio, :checkbox' ) && ! $control.is( ':checked' ) ) {
+						return;
+					}
+
+					activeValues.push( String( $control.val() ) );
 				});
 
 				$group.find( '[data-dialyra-show-for]' ).each(function() {
@@ -68,8 +74,49 @@
 			});
 		};
 
+		var updateSetupBusinessChoice = function() {
+			if ( ! $( '[data-dialyra-business-creation]' ).length ) {
+				return;
+			}
+
+			var showCreateBusiness = 'new' === String( $( 'input[name="dialyra_business_choice"]:checked' ).val() || '' );
+			$( '[data-dialyra-business-creation]' ).prop( 'hidden', ! showCreateBusiness );
+		};
+
 		$( document ).on( 'change', '[data-dialyra-dynamic-select]', function() {
-			updateDynamicFields( $( this ).closest( '.wp-dialyra-flow-builder' ) );
+			var $scope = $( this ).closest( '[data-dialyra-dynamic-group], .wp-dialyra-flow-builder, .wp-dialyra-setup' );
+			updateDynamicFields( $scope.length ? $scope : $( document ) );
+		});
+
+		$( document ).on( 'change', 'input[name="dialyra_business_choice"]', function() {
+			updateSetupBusinessChoice();
+		});
+
+		$( document ).on( 'change', '#wp-dialyra-setup-business', function() {
+			var selectedBusinessId = String( $( this ).val() || '' );
+
+			if ( selectedBusinessId ) {
+				$( 'input[name="dialyra_business_choice"][value="' + selectedBusinessId + '"]' ).prop( 'checked', true );
+				updateSetupBusinessChoice();
+			}
+		});
+
+		$( document ).on( 'change', '.wp-dialyra-day-picker input[type="checkbox"]', function() {
+			var $checkbox = $( this );
+			var $picker = $checkbox.closest( '.wp-dialyra-day-picker' );
+
+			if ( 'all' === String( $checkbox.val() ) && $checkbox.is( ':checked' ) ) {
+				$picker.find( 'input[type="checkbox"]' ).not( $checkbox ).prop( 'checked', false );
+				return;
+			}
+
+			if ( 'all' !== String( $checkbox.val() ) && $checkbox.is( ':checked' ) ) {
+				$picker.find( 'input[type="checkbox"][value="all"]' ).prop( 'checked', false );
+			}
+
+			if ( ! $picker.find( 'input[type="checkbox"]:checked' ).length ) {
+				$picker.find( 'input[type="checkbox"][value="all"]' ).prop( 'checked', true );
+			}
 		});
 
 		$( document ).on( 'click', '#wp-dialyra-add-dtmf-action', function() {
@@ -115,6 +162,7 @@
 		});
 
 		updateDynamicFields( $( document ) );
+		updateSetupBusinessChoice();
 	});
 
 })( jQuery );

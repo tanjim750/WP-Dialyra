@@ -35,6 +35,12 @@ if ( ! isset( $wp_dialyra_pages[ $wp_dialyra_current_page ] ) ) {
 }
 
 $wp_dialyra_page_path = plugin_dir_path( __FILE__ ) . 'views/' . $wp_dialyra_pages[ $wp_dialyra_current_page ];
+$wp_dialyra_is_setup_complete = class_exists( 'Dialyra_Auth_Manager' ) ? Dialyra_Auth_Manager::is_setup_complete() : false;
+$wp_dialyra_is_logged_in = class_exists( 'Dialyra_Auth_Manager' ) ? Dialyra_Auth_Manager::is_logged_in() : false;
+$wp_dialyra_footer_api_status = $wp_dialyra_is_logged_in ? __( 'API health: Connected', 'wp-dialyra' ) : __( 'API health: Not connected', 'wp-dialyra' );
+$wp_dialyra_footer_webhook_status = $wp_dialyra_is_setup_complete ? __( 'Webhook: Ready', 'wp-dialyra' ) : __( 'Webhook: Waiting setup', 'wp-dialyra' );
+$wp_dialyra_footer_api_class = $wp_dialyra_is_logged_in ? 'wp-dialyra-footer-status--ready' : 'wp-dialyra-footer-status--warning';
+$wp_dialyra_footer_webhook_class = $wp_dialyra_is_setup_complete ? 'wp-dialyra-footer-status--ready' : 'wp-dialyra-footer-status--warning';
 ?>
 
 <div class="wrap wp-dialyra-admin">
@@ -53,6 +59,7 @@ $wp_dialyra_page_path = plugin_dir_path( __FILE__ ) . 'views/' . $wp_dialyra_pag
 			<?php if ( 'login' !== $wp_dialyra_current_page ) : ?>
 				<nav class="wp-dialyra-header__nav" aria-label="<?php esc_attr_e( 'Dialyra primary navigation', 'wp-dialyra' ); ?>">
 					<a class="wp-dialyra-nav-link <?php echo 'dashboard' === $wp_dialyra_current_page ? 'wp-dialyra-nav-link--active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=dashboard' ) ); ?>"><?php esc_html_e( 'Dashboard', 'wp-dialyra' ); ?></a>
+					<a class="wp-dialyra-nav-link <?php echo 'setup' === $wp_dialyra_current_page ? 'wp-dialyra-nav-link--active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=setup' ) ); ?>"><?php esc_html_e( 'Setup', 'wp-dialyra' ); ?></a>
 					<a class="wp-dialyra-nav-link <?php echo in_array( $wp_dialyra_current_page, array( 'flows', 'flow-builder', 'flow-preview' ), true ) ? 'wp-dialyra-nav-link--active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=flows' ) ); ?>"><?php esc_html_e( 'Flows', 'wp-dialyra' ); ?></a>
 					<a class="wp-dialyra-nav-link <?php echo 'audio' === $wp_dialyra_current_page ? 'wp-dialyra-nav-link--active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=audio' ) ); ?>"><?php esc_html_e( 'Audio', 'wp-dialyra' ); ?></a>
 					<a class="wp-dialyra-nav-link <?php echo 'call-history' === $wp_dialyra_current_page ? 'wp-dialyra-nav-link--active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=call-history' ) ); ?>"><?php esc_html_e( 'Call History', 'wp-dialyra' ); ?></a>
@@ -60,7 +67,7 @@ $wp_dialyra_page_path = plugin_dir_path( __FILE__ ) . 'views/' . $wp_dialyra_pag
 					<a class="wp-dialyra-nav-link <?php echo 'settings' === $wp_dialyra_current_page ? 'wp-dialyra-nav-link--active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=settings' ) ); ?>"><?php esc_html_e( 'Settings', 'wp-dialyra' ); ?></a>
 				</nav>
 			<?php endif; ?>
-			<span class="wp-dialyra-status wp-dialyra-status--pending"><?php esc_html_e( 'Not connected', 'wp-dialyra' ); ?></span>
+			<span class="wp-dialyra-status <?php echo $wp_dialyra_is_setup_complete ? 'wp-dialyra-status--ready' : 'wp-dialyra-status--pending'; ?>"><?php echo esc_html( $wp_dialyra_is_setup_complete ? __( 'Setup ready', 'wp-dialyra' ) : __( 'Setup required', 'wp-dialyra' ) ); ?></span>
 		</div>
 	</header>
 
@@ -74,8 +81,8 @@ $wp_dialyra_page_path = plugin_dir_path( __FILE__ ) . 'views/' . $wp_dialyra_pag
 			<span><?php esc_html_e( 'Version 1.0.0', 'wp-dialyra' ); ?></span>
 		</div>
 		<div class="wp-dialyra-footer__meta">
-			<span><?php esc_html_e( 'API health: Not connected', 'wp-dialyra' ); ?></span>
-			<span><?php esc_html_e( 'Webhook: Waiting setup', 'wp-dialyra' ); ?></span>
+			<span class="wp-dialyra-footer-status <?php echo esc_attr( $wp_dialyra_footer_api_class ); ?>"><?php echo esc_html( $wp_dialyra_footer_api_status ); ?></span>
+			<span class="wp-dialyra-footer-status <?php echo esc_attr( $wp_dialyra_footer_webhook_class ); ?>"><?php echo esc_html( $wp_dialyra_footer_webhook_status ); ?></span>
 		</div>
 	</footer>
 </div>

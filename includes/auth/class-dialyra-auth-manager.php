@@ -19,6 +19,8 @@ class Dialyra_Auth_Manager {
     const REFRESH_TOKEN_OPTION = 'dialyra_refresh_token';
     const BUSINESS_ID_OPTION  = 'dialyra_business_id';
     const USER_INFO_OPTION    = 'dialyra_user_info';
+    const SITE_TOKEN_OPTION   = 'dialyra_site_access_token';
+    const SETUP_SETTINGS_OPTION = 'dialyra_setup_settings';
 
     /**
      * Save the access token.
@@ -155,6 +157,38 @@ class Dialyra_Auth_Manager {
     }
 
     /**
+     * Check whether the required plugin setup is complete.
+     *
+     * Default flow is intentionally optional.
+     *
+     * @since    1.0.0
+     * @return   bool    True if required setup is complete, false otherwise.
+     */
+    public static function is_setup_complete() {
+        $business_id = absint( self::get_business_id() );
+
+        if ( ! self::is_logged_in() || ! $business_id ) {
+            return false;
+        }
+
+        $site_token = get_option( self::SITE_TOKEN_OPTION, array() );
+        $site_token = is_array( $site_token ) ? $site_token : array();
+
+        if ( empty( $site_token['token'] ) || empty( $site_token['business_id'] ) || absint( $site_token['business_id'] ) !== $business_id ) {
+            return false;
+        }
+
+        $setup_settings = get_option( self::SETUP_SETTINGS_OPTION, array() );
+        $setup_settings = is_array( $setup_settings ) ? $setup_settings : array();
+
+        if ( empty( $setup_settings['business_id'] ) || absint( $setup_settings['business_id'] ) !== $business_id ) {
+            return false;
+        }
+
+        return ! empty( $setup_settings['call_trigger']['mode'] );
+    }
+
+    /**
      * Check whether a Dialyra user session exists locally.
      *
      * @since    1.0.0
@@ -174,6 +208,7 @@ class Dialyra_Auth_Manager {
         self::remove_refresh_token();
         self::remove_business_id();
         self::remove_user_info();
+        delete_option( self::SITE_TOKEN_OPTION );
     }
 
     /**
@@ -209,7 +244,7 @@ class Dialyra_Auth_Manager {
             exit;
         }
 
-        if ( self::is_logged_in() && ! self::get_business_id() && ! self::is_setup_page() && ! self::is_login_page() ) {
+        if ( self::is_logged_in() && ! self::is_setup_complete() && ! self::is_setup_page() && ! self::is_login_page() ) {
             wp_safe_redirect( admin_url( 'admin.php?page=wp-dialyra&p=setup' ) );
             exit;
         }

@@ -17,7 +17,29 @@ $wp_dialyra_user_name = ! empty( $wp_dialyra_user_info['full_name'] ) ? $wp_dial
 $wp_dialyra_user_email = ! empty( $wp_dialyra_user_info['email'] ) ? $wp_dialyra_user_info['email'] : __( 'Connected account', 'wp-dialyra' );
 $wp_dialyra_store_name = get_bloginfo( 'name' );
 $wp_dialyra_store_email = get_option( 'admin_email' );
+$wp_dialyra_store_country = '';
 $wp_dialyra_setup_defaults = class_exists( 'Wp_Dialyra_Utils' ) ? Wp_Dialyra_Utils::get_setup_defaults() : array();
+$wp_dialyra_order_statuses = class_exists( 'Wp_Dialyra_Utils' ) ? Wp_Dialyra_Utils::get_default_order_statuses() : array();
+
+if ( function_exists( 'WC' ) && WC() && isset( WC()->countries ) ) {
+	$wp_dialyra_country_code = WC()->countries->get_base_country();
+	$wp_dialyra_countries = WC()->countries->get_countries();
+	$wp_dialyra_store_country = isset( $wp_dialyra_countries[ $wp_dialyra_country_code ] ) ? $wp_dialyra_countries[ $wp_dialyra_country_code ] : '';
+} elseif ( get_option( 'woocommerce_default_country' ) ) {
+	$wp_dialyra_country_parts = explode( ':', get_option( 'woocommerce_default_country' ) );
+	$wp_dialyra_store_country = ! empty( $wp_dialyra_country_parts[0] ) ? sanitize_text_field( $wp_dialyra_country_parts[0] ) : '';
+}
+
+if ( function_exists( 'wc_get_order_statuses' ) ) {
+	$wp_dialyra_order_statuses = array();
+
+	foreach ( wc_get_order_statuses() as $wp_dialyra_wc_status_key => $wp_dialyra_wc_status_label ) {
+		$wp_dialyra_order_statuses[ preg_replace( '/^wc-/', '', $wp_dialyra_wc_status_key ) ] = $wp_dialyra_wc_status_label;
+	}
+
+	$wp_dialyra_order_statuses['no_change'] = __( 'Keep current status', 'wp-dialyra' );
+}
+
 $wp_dialyra_retry_defaults = isset( $wp_dialyra_setup_defaults['retry_policy'] ) ? $wp_dialyra_setup_defaults['retry_policy'] : array();
 $wp_dialyra_business_hours_defaults = isset( $wp_dialyra_setup_defaults['business_hours'] ) ? $wp_dialyra_setup_defaults['business_hours'] : array();
 $wp_dialyra_call_trigger_defaults = isset( $wp_dialyra_setup_defaults['call_trigger'] ) ? $wp_dialyra_setup_defaults['call_trigger'] : array();
@@ -27,15 +49,34 @@ $wp_dialyra_timezone = ! empty( $wp_dialyra_business_hours_defaults['timezone'] 
 $wp_dialyra_business_days = class_exists( 'Wp_Dialyra_Utils' ) ? Wp_Dialyra_Utils::get_business_hour_days() : array();
 $wp_dialyra_selected_days = ! empty( $wp_dialyra_business_hours_defaults['days'] ) ? $wp_dialyra_business_hours_defaults['days'] : array( 'all' );
 $wp_dialyra_plugin = class_exists( 'Wp_Dialyra' ) ? Wp_Dialyra::get_instance() : null;
+$wp_dialyra_api_endpoints = $wp_dialyra_plugin ? $wp_dialyra_plugin->get_api_endpoints() : null;
 $wp_dialyra_business_manager = $wp_dialyra_plugin ? $wp_dialyra_plugin->get_business_manager() : null;
 $wp_dialyra_flow_manager = $wp_dialyra_plugin ? $wp_dialyra_plugin->get_flow_manager() : null;
+
+if ( $wp_dialyra_business_manager ) {
+	$wp_dialyra_setup_defaults = $wp_dialyra_business_manager->get_setup_settings();
+	$wp_dialyra_retry_defaults = isset( $wp_dialyra_setup_defaults['retry_policy'] ) ? $wp_dialyra_setup_defaults['retry_policy'] : array();
+	$wp_dialyra_business_hours_defaults = isset( $wp_dialyra_setup_defaults['business_hours'] ) ? $wp_dialyra_setup_defaults['business_hours'] : array();
+	$wp_dialyra_call_trigger_defaults = isset( $wp_dialyra_setup_defaults['call_trigger'] ) ? $wp_dialyra_setup_defaults['call_trigger'] : array();
+	$wp_dialyra_status_mapping_defaults = isset( $wp_dialyra_setup_defaults['order_status_map'] ) ? $wp_dialyra_setup_defaults['order_status_map'] : array();
+	$wp_dialyra_capacity_defaults = isset( $wp_dialyra_setup_defaults['call_capacity'] ) ? $wp_dialyra_setup_defaults['call_capacity'] : array();
+	$wp_dialyra_timezone = ! empty( $wp_dialyra_business_hours_defaults['timezone'] ) ? $wp_dialyra_business_hours_defaults['timezone'] : wp_timezone_string();
+	$wp_dialyra_selected_days = ! empty( $wp_dialyra_business_hours_defaults['days'] ) ? $wp_dialyra_business_hours_defaults['days'] : array( 'all' );
+}
+
+$wp_dialyra_trigger_mode = ! empty( $wp_dialyra_call_trigger_defaults['mode'] ) ? sanitize_key( $wp_dialyra_call_trigger_defaults['mode'] ) : 'instant';
+$wp_dialyra_trigger_status = ! empty( $wp_dialyra_call_trigger_defaults['order_status'] ) ? sanitize_key( $wp_dialyra_call_trigger_defaults['order_status'] ) : 'processing';
+$wp_dialyra_default_flow_id = $wp_dialyra_flow_manager ? $wp_dialyra_flow_manager->get_default_flow_id() : absint( isset( $wp_dialyra_setup_defaults['default_flow_id'] ) ? $wp_dialyra_setup_defaults['default_flow_id'] : 0 );
 
 $error_message = null;
 $success_message = null;
 $wp_dialyra_setup_businesses = array();
 $wp_dialyra_setup_flows = array();
+$wp_dialyra_account_fetch_error = null;
 $wp_dialyra_business_fetch_error = null;
 $wp_dialyra_flow_fetch_error = null;
+$wp_dialyra_post_connected_business_id = 0;
+$wp_dialyra_site_token_data = array();
 
 $wp_dialyra_extract_items = static function ( $response, $container_keys = array() ) {
 	if ( ! $response || ! is_object( $response ) || ! method_exists( $response, 'is_successful' ) || ! $response->is_successful() || ! method_exists( $response, 'get_data' ) ) {
@@ -64,6 +105,25 @@ $wp_dialyra_extract_items = static function ( $response, $container_keys = array
 	}
 
 	return array();
+};
+
+$wp_dialyra_extract_response_data = static function ( $response ) {
+	if ( ! $response || ! is_object( $response ) || ! method_exists( $response, 'is_successful' ) || ! $response->is_successful() || ! method_exists( $response, 'get_data' ) ) {
+		return array();
+	}
+
+	$data = $response->get_data();
+	$data = is_array( $data ) ? $data : array();
+
+	if ( isset( $data['data'] ) && is_array( $data['data'] ) ) {
+		$data = $data['data'];
+	}
+
+	if ( isset( $data['business'] ) && is_array( $data['business'] ) ) {
+		$data = $data['business'];
+	}
+
+	return $data;
 };
 
 $wp_dialyra_normalize_business = static function ( $business ) {
@@ -99,9 +159,48 @@ $wp_dialyra_normalize_flow = static function ( $flow ) {
 	);
 };
 
+if ( $wp_dialyra_api_endpoints && class_exists( 'Dialyra_Auth_Manager' ) && Dialyra_Auth_Manager::is_logged_in() ) {
+	$wp_dialyra_account_response = $wp_dialyra_api_endpoints->get_me();
+
+	if ( $wp_dialyra_account_response && $wp_dialyra_account_response->is_successful() ) {
+		$wp_dialyra_account_data = $wp_dialyra_account_response->get_data();
+		$wp_dialyra_account_data = is_array( $wp_dialyra_account_data ) ? $wp_dialyra_account_data : array();
+
+		if ( isset( $wp_dialyra_account_data['data'] ) && is_array( $wp_dialyra_account_data['data'] ) ) {
+			$wp_dialyra_account_data = $wp_dialyra_account_data['data'];
+		}
+
+		if ( ! empty( $wp_dialyra_account_data['user'] ) && is_array( $wp_dialyra_account_data['user'] ) ) {
+			Dialyra_Auth_Manager::save_user_info( $wp_dialyra_account_data['user'] );
+			$wp_dialyra_user_info = $wp_dialyra_account_data['user'];
+			$wp_dialyra_user_name = ! empty( $wp_dialyra_user_info['full_name'] ) ? $wp_dialyra_user_info['full_name'] : __( 'Dialyra user', 'wp-dialyra' );
+			$wp_dialyra_user_email = ! empty( $wp_dialyra_user_info['email'] ) ? $wp_dialyra_user_info['email'] : __( 'Connected account', 'wp-dialyra' );
+		}
+
+		if ( ! empty( $wp_dialyra_account_data['business'] ) && is_array( $wp_dialyra_account_data['business'] ) && $wp_dialyra_business_manager ) {
+			$wp_dialyra_current_business_id = absint( Dialyra_Auth_Manager::get_business_id() );
+			$wp_dialyra_account_business_id = isset( $wp_dialyra_account_data['business']['id'] ) ? absint( $wp_dialyra_account_data['business']['id'] ) : 0;
+
+			if ( ! $wp_dialyra_current_business_id || $wp_dialyra_current_business_id === $wp_dialyra_account_business_id ) {
+				$wp_dialyra_business_manager->save_connected_business_data( $wp_dialyra_account_data['business'] );
+			}
+		}
+	} elseif ( $wp_dialyra_account_response && ( 401 === $wp_dialyra_account_response->get_status_code() || 'unauthenticated' === $wp_dialyra_account_response->get_error_type() ) ) {
+		Dialyra_Auth_Manager::clear_authentication();
+		wp_safe_redirect( Dialyra_Auth_Manager::get_login_url() );
+		exit;
+	} elseif ( $wp_dialyra_account_response ) {
+		$wp_dialyra_account_fetch_error = $wp_dialyra_account_response->get_message();
+	}
+} elseif ( class_exists( 'Dialyra_Auth_Manager' ) && ! Dialyra_Auth_Manager::is_logged_in() ) {
+	wp_safe_redirect( Dialyra_Auth_Manager::get_login_url() );
+	exit;
+}
+
 if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ?? '' ) ) ) && isset( $_POST['wp_dialyra_setup_nonce'] ) && wp_verify_nonce( sanitize_key( $_POST['wp_dialyra_setup_nonce'] ), 'wp-dialyra-setup' ) ) {
+	$setup_action = isset( $_POST['dialyra_setup_action'] ) ? sanitize_key( wp_unslash( $_POST['dialyra_setup_action'] ) ) : 'finish_setup';
 	$business_choice = isset( $_POST['dialyra_business_choice'] ) ? sanitize_text_field( wp_unslash( $_POST['dialyra_business_choice'] ) ) : '';
-	$create_new_business = 'new' === $business_choice;
+	$create_new_business = 'create_business' === $setup_action || 'new' === $business_choice;
 	$selected_business_id = isset( $_POST['dialyra_setup_business_id'] ) ? absint( wp_unslash( $_POST['dialyra_setup_business_id'] ) ) : 0;
 	$selected_flow_id = isset( $_POST['dialyra_setup_default_flow'] ) ? absint( wp_unslash( $_POST['dialyra_setup_default_flow'] ) ) : 0;
 	$connected_business_response = null;
@@ -121,14 +220,26 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 		} else {
 			$business_data = array(
 				'name'     => $new_business_name,
+				'slug'     => sanitize_title( $new_business_name ),
 				'email'    => $new_business_email,
 				'phone'    => $new_business_phone,
 				'timezone' => $new_business_timezone,
 			);
+
+			if ( ! empty( $wp_dialyra_store_country ) ) {
+				$business_data['country'] = $wp_dialyra_store_country;
+			}
 			$connected_business_response = $wp_dialyra_business_manager ? $wp_dialyra_business_manager->create_and_connect_business( $business_data ) : false;
 
 			if ( ! $connected_business_response || ! $connected_business_response->is_successful() ) {
 				$error_message = $connected_business_response ? $connected_business_response->get_message() : esc_html__( 'Business service is not available.', 'wp-dialyra' );
+			} else {
+				$connected_business_data = $wp_dialyra_extract_response_data( $connected_business_response );
+				$wp_dialyra_post_connected_business_id = ! empty( $connected_business_data['id'] ) ? absint( $connected_business_data['id'] ) : 0;
+
+				if ( 'create_business' === $setup_action ) {
+					$success_message = esc_html__( 'Business created and selected. Continue setup by choosing a default flow.', 'wp-dialyra' );
+				}
 			}
 		}
 	} elseif ( ! empty( $selected_business_id ) ) {
@@ -136,9 +247,22 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 
 		if ( ! $connected_business_response || ! $connected_business_response->is_successful() ) {
 			$error_message = $connected_business_response ? $connected_business_response->get_message() : esc_html__( 'Business service is not available.', 'wp-dialyra' );
+		} else {
+			$wp_dialyra_post_connected_business_id = $selected_business_id;
 		}
 	} else {
 		$error_message = esc_html__( 'Please select or create a business to continue.', 'wp-dialyra' );
+	}
+
+	if ( empty( $error_message ) ) {
+		$wp_dialyra_connected_business_id = class_exists( 'Dialyra_Auth_Manager' ) ? absint( Dialyra_Auth_Manager::get_business_id() ) : 0;
+		$wp_dialyra_token_response = $wp_dialyra_business_manager ? $wp_dialyra_business_manager->ensure_site_access_token( $wp_dialyra_connected_business_id ) : false;
+
+		if ( false === $wp_dialyra_token_response ) {
+			$error_message = esc_html__( 'Access token could not be created because no business is connected.', 'wp-dialyra' );
+		} elseif ( is_object( $wp_dialyra_token_response ) && method_exists( $wp_dialyra_token_response, 'is_successful' ) && ! $wp_dialyra_token_response->is_successful() ) {
+			$error_message = $wp_dialyra_token_response->get_message();
+		}
 	}
 
 	if ( empty( $error_message ) ) {
@@ -174,9 +298,22 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 
 		if ( $wp_dialyra_business_manager ) {
 			$wp_dialyra_business_manager->save_setup_settings( $setup_settings );
+			$wp_dialyra_setup_defaults = $wp_dialyra_business_manager->get_setup_settings();
+			$wp_dialyra_retry_defaults = isset( $wp_dialyra_setup_defaults['retry_policy'] ) ? $wp_dialyra_setup_defaults['retry_policy'] : array();
+			$wp_dialyra_business_hours_defaults = isset( $wp_dialyra_setup_defaults['business_hours'] ) ? $wp_dialyra_setup_defaults['business_hours'] : array();
+			$wp_dialyra_call_trigger_defaults = isset( $wp_dialyra_setup_defaults['call_trigger'] ) ? $wp_dialyra_setup_defaults['call_trigger'] : array();
+			$wp_dialyra_status_mapping_defaults = isset( $wp_dialyra_setup_defaults['order_status_map'] ) ? $wp_dialyra_setup_defaults['order_status_map'] : array();
+			$wp_dialyra_capacity_defaults = isset( $wp_dialyra_setup_defaults['call_capacity'] ) ? $wp_dialyra_setup_defaults['call_capacity'] : array();
+			$wp_dialyra_timezone = ! empty( $wp_dialyra_business_hours_defaults['timezone'] ) ? $wp_dialyra_business_hours_defaults['timezone'] : wp_timezone_string();
+			$wp_dialyra_selected_days = ! empty( $wp_dialyra_business_hours_defaults['days'] ) ? $wp_dialyra_business_hours_defaults['days'] : array( 'all' );
+			$wp_dialyra_trigger_mode = ! empty( $wp_dialyra_call_trigger_defaults['mode'] ) ? sanitize_key( $wp_dialyra_call_trigger_defaults['mode'] ) : 'instant';
+			$wp_dialyra_trigger_status = ! empty( $wp_dialyra_call_trigger_defaults['order_status'] ) ? sanitize_key( $wp_dialyra_call_trigger_defaults['order_status'] ) : 'processing';
+			$wp_dialyra_default_flow_id = absint( isset( $wp_dialyra_setup_defaults['default_flow_id'] ) ? $wp_dialyra_setup_defaults['default_flow_id'] : 0 );
 		}
 
-		if ( $selected_flow_id && $wp_dialyra_flow_manager ) {
+		if ( 'create_business' === $setup_action ) {
+			$success_message = $success_message ? $success_message : esc_html__( 'Business created and selected. Continue setup by choosing a default flow.', 'wp-dialyra' );
+		} elseif ( $selected_flow_id && $wp_dialyra_flow_manager ) {
 			$flow_response = $wp_dialyra_flow_manager->set_default_flow( $selected_flow_id );
 
 			if ( $flow_response && $flow_response->is_successful() ) {
@@ -186,7 +323,8 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 
 			$error_message = $flow_response ? $flow_response->get_message() : esc_html__( 'Flow service is not available.', 'wp-dialyra' );
 		} else {
-			$success_message = esc_html__( 'Business connected. Create a flow before finishing setup.', 'wp-dialyra' );
+			wp_safe_redirect( admin_url( 'admin.php?page=wp-dialyra&p=dashboard' ) );
+			exit;
 		}
 	}
 }
@@ -199,15 +337,36 @@ if ( $wp_dialyra_business_manager ) {
 			return ! empty( $business['id'] );
 		} );
 	} elseif ( $business_response ) {
-		$wp_dialyra_business_fetch_error = $business_response->get_message();
+		$wp_dialyra_business_error_message = $business_response->get_message();
+
+		if ( false === stripos( $wp_dialyra_business_error_message, 'membership' ) ) {
+			$wp_dialyra_business_fetch_error = $wp_dialyra_business_error_message;
+		}
 	}
 }
 
-$wp_dialyra_selected_business_id = class_exists( 'Dialyra_Auth_Manager' ) ? absint( Dialyra_Auth_Manager::get_business_id() ) : 0;
+$wp_dialyra_selected_business_id = $wp_dialyra_post_connected_business_id ? $wp_dialyra_post_connected_business_id : ( class_exists( 'Dialyra_Auth_Manager' ) ? absint( Dialyra_Auth_Manager::get_business_id() ) : 0 );
 
 if ( ! $wp_dialyra_selected_business_id && ! empty( $wp_dialyra_setup_businesses ) ) {
 	$first_business = reset( $wp_dialyra_setup_businesses );
 	$wp_dialyra_selected_business_id = ! empty( $first_business['id'] ) ? absint( $first_business['id'] ) : 0;
+}
+
+if ( $wp_dialyra_selected_business_id && $wp_dialyra_business_manager ) {
+	$wp_dialyra_connected_business_data = $wp_dialyra_business_manager->get_connected_business_data();
+	$wp_dialyra_site_token_data = $wp_dialyra_business_manager->get_site_access_token_data();
+	$wp_dialyra_has_connected_business = false;
+
+	foreach ( $wp_dialyra_setup_businesses as $wp_dialyra_setup_business ) {
+		if ( ! empty( $wp_dialyra_setup_business['id'] ) && absint( $wp_dialyra_setup_business['id'] ) === $wp_dialyra_selected_business_id ) {
+			$wp_dialyra_has_connected_business = true;
+			break;
+		}
+	}
+
+	if ( ! $wp_dialyra_has_connected_business && ! empty( $wp_dialyra_connected_business_data['id'] ) ) {
+		array_unshift( $wp_dialyra_setup_businesses, $wp_dialyra_normalize_business( $wp_dialyra_connected_business_data ) );
+	}
 }
 
 if ( $wp_dialyra_flow_manager && $wp_dialyra_selected_business_id ) {
@@ -242,51 +401,68 @@ if ( $wp_dialyra_flow_manager && $wp_dialyra_selected_business_id ) {
 	</div>
 
 	<div class="wp-dialyra-setup-steps" aria-label="<?php esc_attr_e( 'Setup progress', 'wp-dialyra' ); ?>">
-		<span class="wp-dialyra-setup-step wp-dialyra-setup-step--active"><?php esc_html_e( 'Business', 'wp-dialyra' ); ?></span>
-		<span class="wp-dialyra-setup-step"><?php esc_html_e( 'Access Token', 'wp-dialyra' ); ?></span>
-		<span class="wp-dialyra-setup-step"><?php esc_html_e( 'Default Flow', 'wp-dialyra' ); ?></span>
-		<span class="wp-dialyra-setup-step"><?php esc_html_e( 'Call Trigger', 'wp-dialyra' ); ?></span>
+		<a class="wp-dialyra-setup-back" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=dashboard' ) ); ?>"><?php esc_html_e( '<< Dashboard', 'wp-dialyra' ); ?></a>
+		<div class="wp-dialyra-setup-steps__links">
+			<a class="wp-dialyra-setup-step wp-dialyra-setup-step--active" href="#wp-dialyra-setup-business-section"><?php esc_html_e( 'Business', 'wp-dialyra' ); ?></a>
+			<a class="wp-dialyra-setup-step" href="#wp-dialyra-setup-token-section"><?php esc_html_e( 'Access Token', 'wp-dialyra' ); ?></a>
+			<a class="wp-dialyra-setup-step" href="#wp-dialyra-setup-flow-section"><?php esc_html_e( 'Default Flow', 'wp-dialyra' ); ?></a>
+			<a class="wp-dialyra-setup-step" href="#wp-dialyra-setup-trigger-section"><?php esc_html_e( 'Call Trigger', 'wp-dialyra' ); ?></a>
+		</div>
 	</div>
 
 	<form class="wp-dialyra-setup__grid" method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=setup' ) ); ?>">
 		<?php wp_nonce_field( 'wp-dialyra-setup', 'wp_dialyra_setup_nonce' ); ?>
 
 		<?php if ( ! empty( $error_message ) ) : ?>
-			<div class="wp-dialyra-notice wp-dialyra-notice--error">
+			<div class="wp-dialyra-fuse-warning wp-dialyra-fuse-warning--error">
+				<span class="dashicons dashicons-warning" aria-hidden="true"></span>
 				<p><?php echo esc_html( $error_message ); ?></p>
 			</div>
 		<?php endif; ?>
 
 		<?php if ( ! empty( $success_message ) ) : ?>
-			<div class="wp-dialyra-notice wp-dialyra-notice--success">
+			<div class="wp-dialyra-fuse-warning wp-dialyra-fuse-warning--success">
+				<span class="dashicons dashicons-yes-alt" aria-hidden="true"></span>
 				<p><?php echo esc_html( $success_message ); ?></p>
 			</div>
 		<?php endif; ?>
 
 		<?php if ( ! empty( $wp_dialyra_business_fetch_error ) ) : ?>
-			<div class="wp-dialyra-notice wp-dialyra-notice--error">
+			<div class="wp-dialyra-fuse-warning wp-dialyra-fuse-warning--warning">
+				<span class="dashicons dashicons-info-outline" aria-hidden="true"></span>
 				<p><?php echo esc_html( $wp_dialyra_business_fetch_error ); ?></p>
 			</div>
 		<?php endif; ?>
 
 		<?php if ( ! empty( $wp_dialyra_flow_fetch_error ) ) : ?>
-			<div class="wp-dialyra-notice wp-dialyra-notice--error">
+			<div class="wp-dialyra-fuse-warning wp-dialyra-fuse-warning--warning">
+				<span class="dashicons dashicons-info-outline" aria-hidden="true"></span>
 				<p><?php echo esc_html( $wp_dialyra_flow_fetch_error ); ?></p>
 			</div>
 		<?php endif; ?>
 
-		<section class="wp-dialyra-setup-card wp-dialyra-setup-card--wide">
+		<section id="wp-dialyra-setup-business-section" class="wp-dialyra-setup-card wp-dialyra-setup-card--wide">
 			<div class="wp-dialyra-setup-card__head">
-				<span aria-hidden="true">01</span>
-				<div>
-					<p class="wp-dialyra-eyebrow"><?php esc_html_e( 'Business', 'wp-dialyra' ); ?></p>
-					<h3><?php esc_html_e( 'Select or create your Dialyra business', 'wp-dialyra' ); ?></h3>
-					<p><?php esc_html_e( 'This tells Dialyra which business account should own calls, flows, agents, and audio for this store.', 'wp-dialyra' ); ?></p>
+				<div class="wp-dialyra-setup-card__title">
+					<span aria-hidden="true">01</span>
+					<div>
+						<p class="wp-dialyra-eyebrow"><?php esc_html_e( 'Business', 'wp-dialyra' ); ?></p>
+						<h3><?php esc_html_e( 'Select or create your Dialyra business', 'wp-dialyra' ); ?></h3>
+						<p><?php esc_html_e( 'This tells Dialyra which business account should own calls, flows, agents, and audio for this store.', 'wp-dialyra' ); ?></p>
+					</div>
 				</div>
 			</div>
 
 			<div class="wp-dialyra-business-choice">
 				<div class="wp-dialyra-business-choice__list">
+					<div class="wp-dialyra-setup-subsection">
+						<span class="dashicons dashicons-building" aria-hidden="true"></span>
+						<div>
+							<h4><?php esc_html_e( 'Use an existing business', 'wp-dialyra' ); ?></h4>
+							<p><?php esc_html_e( 'Select a business already available in your Dialyra account. The business ID stays hidden and is stored automatically.', 'wp-dialyra' ); ?></p>
+						</div>
+					</div>
+
 					<?php if ( ! empty( $wp_dialyra_setup_businesses ) && is_array( $wp_dialyra_setup_businesses ) ) : ?>
 						<div class="wp-dialyra-settings-row">
 							<label for="wp-dialyra-setup-business"><?php esc_html_e( 'Existing business', 'wp-dialyra' ); ?></label>
@@ -342,44 +518,50 @@ if ( $wp_dialyra_flow_manager && $wp_dialyra_selected_business_id ) {
 							<span class="dashicons dashicons-store" aria-hidden="true"></span>
 							<div>
 								<strong><?php esc_html_e( 'No business found', 'wp-dialyra' ); ?></strong>
-								<p><?php esc_html_e( 'This Dialyra account is valid, but it does not have a business yet. Create one from this store to continue.', 'wp-dialyra' ); ?></p>
+								<p><?php esc_html_e( 'This Dialyra account is valid, but no business is available yet. Use the Create business section to create one from this store.', 'wp-dialyra' ); ?></p>
 							</div>
 						</div>
 					<?php endif; ?>
 				</div>
 
 				<div class="wp-dialyra-create-business">
-					<div class="wp-dialyra-create-business__head">
-						<span class="dashicons dashicons-store" aria-hidden="true"></span>
-						<div>
-							<h4><?php esc_html_e( 'No business yet?', 'wp-dialyra' ); ?></h4>
-							<p><?php esc_html_e( 'Create one using this store’s details. You can edit the profile later from Settings.', 'wp-dialyra' ); ?></p>
+					<div class="wp-dialyra-create-business__details">
+						<div class="wp-dialyra-create-business__head">
+							<span class="dashicons dashicons-store" aria-hidden="true"></span>
+							<div>
+								<h4><?php esc_html_e( 'Business profile details', 'wp-dialyra' ); ?></h4>
+								<p><?php esc_html_e( 'We prefill this from WordPress. You can update the business profile later from Settings.', 'wp-dialyra' ); ?></p>
+							</div>
 						</div>
-					</div>
 
-					<div class="wp-dialyra-setup-fields">
-						<div class="wp-dialyra-settings-row">
-							<label for="wp-dialyra-new-business-name"><?php esc_html_e( 'Business name', 'wp-dialyra' ); ?></label>
-							<input id="wp-dialyra-new-business-name" name="dialyra_new_business_name" type="text" value="<?php echo esc_attr( $wp_dialyra_store_name ); ?>">
+						<div class="wp-dialyra-setup-fields">
+							<div class="wp-dialyra-settings-row">
+								<label for="wp-dialyra-new-business-name"><?php esc_html_e( 'Business name', 'wp-dialyra' ); ?></label>
+								<input id="wp-dialyra-new-business-name" name="dialyra_new_business_name" type="text" value="<?php echo esc_attr( $wp_dialyra_store_name ); ?>">
+							</div>
+							<div class="wp-dialyra-settings-row">
+								<label for="wp-dialyra-new-business-email"><?php esc_html_e( 'Business email', 'wp-dialyra' ); ?></label>
+								<input id="wp-dialyra-new-business-email" name="dialyra_new_business_email" type="email" value="<?php echo esc_attr( $wp_dialyra_store_email ); ?>">
+							</div>
+							<div class="wp-dialyra-settings-row">
+								<label for="wp-dialyra-new-business-phone"><?php esc_html_e( 'Phone', 'wp-dialyra' ); ?></label>
+								<input id="wp-dialyra-new-business-phone" name="dialyra_new_business_phone" type="tel" placeholder="+8801XXXXXXXXX">
+							</div>
+							<div class="wp-dialyra-settings-row">
+								<label for="wp-dialyra-new-business-timezone"><?php esc_html_e( 'Timezone', 'wp-dialyra' ); ?></label>
+								<input id="wp-dialyra-new-business-timezone" name="dialyra_new_business_timezone" type="text" value="<?php echo esc_attr( $wp_dialyra_timezone ); ?>">
+							</div>
 						</div>
-						<div class="wp-dialyra-settings-row">
-							<label for="wp-dialyra-new-business-email"><?php esc_html_e( 'Business email', 'wp-dialyra' ); ?></label>
-							<input id="wp-dialyra-new-business-email" name="dialyra_new_business_email" type="email" value="<?php echo esc_attr( $wp_dialyra_store_email ); ?>">
-						</div>
-						<div class="wp-dialyra-settings-row">
-							<label for="wp-dialyra-new-business-phone"><?php esc_html_e( 'Phone', 'wp-dialyra' ); ?></label>
-							<input id="wp-dialyra-new-business-phone" name="dialyra_new_business_phone" type="tel" placeholder="+8801XXXXXXXXX">
-						</div>
-						<div class="wp-dialyra-settings-row">
-							<label for="wp-dialyra-new-business-timezone"><?php esc_html_e( 'Timezone', 'wp-dialyra' ); ?></label>
-							<input id="wp-dialyra-new-business-timezone" name="dialyra_new_business_timezone" type="text" value="<?php echo esc_attr( $wp_dialyra_timezone ); ?>">
+
+						<div class="wp-dialyra-create-business__actions">
+							<button class="wp-dialyra-button wp-dialyra-button--primary" type="submit" name="dialyra_setup_action" value="create_business"><?php esc_html_e( 'Create business', 'wp-dialyra' ); ?></button>
 						</div>
 					</div>
 				</div>
 			</div>
 		</section>
 
-		<section class="wp-dialyra-setup-card">
+		<section id="wp-dialyra-setup-token-section" class="wp-dialyra-setup-card">
 			<div class="wp-dialyra-setup-card__head">
 				<span aria-hidden="true">02</span>
 				<div>
@@ -392,13 +574,26 @@ if ( $wp_dialyra_flow_manager && $wp_dialyra_selected_business_id ) {
 			<div class="wp-dialyra-token-preview">
 				<span class="dashicons dashicons-lock" aria-hidden="true"></span>
 				<div>
-					<strong><?php esc_html_e( 'No manual token entry needed', 'wp-dialyra' ); ?></strong>
-					<small><?php esc_html_e( 'We will generate and save it in the background.', 'wp-dialyra' ); ?></small>
+					<?php if ( ! empty( $wp_dialyra_site_token_data['token'] ) && ! empty( $wp_dialyra_site_token_data['business_id'] ) && absint( $wp_dialyra_site_token_data['business_id'] ) === $wp_dialyra_selected_business_id ) : ?>
+						<strong><?php esc_html_e( 'Access token is ready', 'wp-dialyra' ); ?></strong>
+						<small>
+							<?php
+							echo esc_html(
+								! empty( $wp_dialyra_site_token_data['token_prefix'] )
+									? sprintf( __( 'Connected to this business with token prefix %s.', 'wp-dialyra' ), $wp_dialyra_site_token_data['token_prefix'] )
+									: __( 'Connected to this business and stored securely.', 'wp-dialyra' )
+							);
+							?>
+						</small>
+					<?php else : ?>
+						<strong><?php esc_html_e( 'No manual token entry needed', 'wp-dialyra' ); ?></strong>
+						<small><?php esc_html_e( 'We will generate and save it in the background for the selected business.', 'wp-dialyra' ); ?></small>
+					<?php endif; ?>
 				</div>
 			</div>
 		</section>
 
-		<section class="wp-dialyra-setup-card">
+		<section id="wp-dialyra-setup-flow-section" class="wp-dialyra-setup-card">
 			<div class="wp-dialyra-setup-card__head">
 				<span aria-hidden="true">03</span>
 				<div>
@@ -413,7 +608,7 @@ if ( $wp_dialyra_flow_manager && $wp_dialyra_selected_business_id ) {
 					<label for="wp-dialyra-setup-flow"><?php esc_html_e( 'Default flow', 'wp-dialyra' ); ?></label>
 					<select id="wp-dialyra-setup-flow" name="dialyra_setup_default_flow">
 						<?php foreach ( $wp_dialyra_setup_flows as $wp_dialyra_flow ) : ?>
-							<option value="<?php echo esc_attr( $wp_dialyra_flow['id'] ); ?>" <?php selected( $wp_dialyra_flow_manager ? $wp_dialyra_flow_manager->get_default_flow_id() : 0, $wp_dialyra_flow['id'] ); ?>>
+							<option value="<?php echo esc_attr( $wp_dialyra_flow['id'] ); ?>" <?php selected( $wp_dialyra_default_flow_id, $wp_dialyra_flow['id'] ); ?>>
 								<?php echo esc_html( $wp_dialyra_flow['name'] ); ?>
 							</option>
 						<?php endforeach; ?>
@@ -444,7 +639,7 @@ if ( $wp_dialyra_flow_manager && $wp_dialyra_selected_business_id ) {
 			<?php endif; ?>
 		</section>
 
-		<section class="wp-dialyra-setup-card wp-dialyra-setup-card--wide">
+		<section id="wp-dialyra-setup-trigger-section" class="wp-dialyra-setup-card wp-dialyra-setup-card--wide" data-dialyra-dynamic-group>
 			<div class="wp-dialyra-setup-card__head">
 				<span aria-hidden="true">04</span>
 				<div>
@@ -456,14 +651,14 @@ if ( $wp_dialyra_flow_manager && $wp_dialyra_selected_business_id ) {
 
 			<div class="wp-dialyra-trigger-options">
 				<label>
-					<input type="radio" name="dialyra_setup_trigger" value="instant" checked>
+					<input type="radio" name="dialyra_setup_trigger" value="instant" <?php checked( $wp_dialyra_trigger_mode, 'instant' ); ?> data-dialyra-dynamic-select>
 					<span>
 						<strong><?php esc_html_e( 'Call instantly after order', 'wp-dialyra' ); ?></strong>
 						<small><?php esc_html_e( 'Best for COD confirmation and fast fulfillment workflows.', 'wp-dialyra' ); ?></small>
 					</span>
 				</label>
 				<label>
-					<input type="radio" name="dialyra_setup_trigger" value="status">
+					<input type="radio" name="dialyra_setup_trigger" value="status" <?php checked( $wp_dialyra_trigger_mode, 'status' ); ?> data-dialyra-dynamic-select>
 					<span>
 						<strong><?php esc_html_e( 'Call on selected order status', 'wp-dialyra' ); ?></strong>
 						<small><?php esc_html_e( 'Use this when calls should wait until WooCommerce reaches a specific status.', 'wp-dialyra' ); ?></small>
@@ -471,13 +666,15 @@ if ( $wp_dialyra_flow_manager && $wp_dialyra_selected_business_id ) {
 				</label>
 			</div>
 
-			<div class="wp-dialyra-settings-row wp-dialyra-setup-status-select" data-dialyra-trigger-status-field hidden>
+			<div class="wp-dialyra-settings-row wp-dialyra-setup-status-select" data-dialyra-trigger-status-field data-dialyra-show-for="status" hidden>
 				<label for="wp-dialyra-setup-order-status"><?php esc_html_e( 'Order status', 'wp-dialyra' ); ?></label>
 				<select id="wp-dialyra-setup-order-status" name="dialyra_setup_order_status">
-					<option value="processing"><?php esc_html_e( 'Processing', 'wp-dialyra' ); ?></option>
-					<option value="pending"><?php esc_html_e( 'Pending payment', 'wp-dialyra' ); ?></option>
-					<option value="on-hold"><?php esc_html_e( 'On hold', 'wp-dialyra' ); ?></option>
-					<option value="completed"><?php esc_html_e( 'Completed', 'wp-dialyra' ); ?></option>
+					<?php foreach ( $wp_dialyra_order_statuses as $wp_dialyra_status_key => $wp_dialyra_status_label ) : ?>
+						<?php if ( 'no_change' === $wp_dialyra_status_key ) : ?>
+							<?php continue; ?>
+						<?php endif; ?>
+						<option value="<?php echo esc_attr( $wp_dialyra_status_key ); ?>" <?php selected( $wp_dialyra_trigger_status, $wp_dialyra_status_key ); ?>><?php echo esc_html( $wp_dialyra_status_label ); ?></option>
+					<?php endforeach; ?>
 				</select>
 			</div>
 		</section>

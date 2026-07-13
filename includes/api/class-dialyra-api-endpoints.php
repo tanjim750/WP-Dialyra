@@ -360,6 +360,63 @@ class Dialyra_API_Endpoints {
         return $this->client->get( 'business' );
     }
 
+    // Access Tokens
+
+    /**
+     * Create an access token for a business.
+     *
+     * @since    1.0.0
+     * @param    array     $token_data    Access token fields.
+     * @return   Dialyra_API_Response  The API response containing token data or error.
+     */
+    public function create_access_token( $token_data ) {
+        return $this->client->post( 'access-tokens', $this->sanitize_access_token_payload( $token_data ) );
+    }
+
+    /**
+     * Get access tokens.
+     *
+     * @since    1.0.0
+     * @param    array     $query_params    Optional query parameters.
+     * @return   Dialyra_API_Response  The API response containing token list data or error.
+     */
+    public function get_access_tokens( $query_params = array() ) {
+        return $this->client->get( 'access-tokens', $this->sanitize_payload( $query_params ) );
+    }
+
+    /**
+     * Get a specific access token.
+     *
+     * @since    1.0.0
+     * @param    int       $token_id    Access token ID.
+     * @return   Dialyra_API_Response  The API response containing token data or error.
+     */
+    public function get_access_token( $token_id ) {
+        return $this->client->get( 'access-tokens/' . absint( $token_id ) );
+    }
+
+    /**
+     * Revoke an access token.
+     *
+     * @since    1.0.0
+     * @param    int       $token_id    Access token ID.
+     * @return   Dialyra_API_Response  The API response containing revoked token data or error.
+     */
+    public function revoke_access_token( $token_id ) {
+        return $this->client->post( 'access-tokens/' . absint( $token_id ) . '/revoke' );
+    }
+
+    /**
+     * Delete an access token.
+     *
+     * @since    1.0.0
+     * @param    int       $token_id    Access token ID.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function delete_access_token( $token_id ) {
+        return $this->client->delete( 'access-tokens/' . absint( $token_id ) );
+    }
+
     // Agents
 
     /**
@@ -598,6 +655,36 @@ class Dialyra_API_Endpoints {
 
         if ( isset( $payload['email'] ) ) {
             $payload['email'] = sanitize_email( $payload['email'] );
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize an access token payload.
+     *
+     * @since    1.0.0
+     * @param    array     $token_data    Raw token data.
+     * @return   array
+     */
+    private function sanitize_access_token_payload( $token_data ) {
+        $payload = $this->sanitize_allowed_payload( $token_data, array(
+            'name',
+            'business_id',
+            'expires_days',
+            'scopes',
+        ) );
+
+        if ( isset( $payload['business_id'] ) ) {
+            $payload['business_id'] = absint( $payload['business_id'] );
+        }
+
+        if ( isset( $payload['expires_days'] ) ) {
+            $payload['expires_days'] = absint( $payload['expires_days'] );
+        }
+
+        if ( isset( $payload['scopes'] ) && is_array( $payload['scopes'] ) ) {
+            $payload['scopes'] = array_values( array_filter( array_map( 'sanitize_text_field', $payload['scopes'] ) ) );
         }
 
         return $payload;

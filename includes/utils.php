@@ -32,6 +32,22 @@ class Wp_Dialyra_Utils {
 	}
 
 	/**
+	 * Get default site access token values.
+	 *
+	 * @since    1.0.0
+	 * @return   array
+	 */
+	public static function get_site_access_token_defaults() {
+		return array(
+			'expires_days' => 365,
+			'scopes'       => array(
+				'calls:originate',
+				'calls:read',
+			),
+		);
+	}
+
+	/**
 	 * Get default call trigger settings.
 	 *
 	 * @since    1.0.0
