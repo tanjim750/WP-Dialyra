@@ -24,6 +24,7 @@ $wp_dialyra_pages = array(
 	'login'     => 'login.php',
 	'queue-calls' => 'queue-calls.php',
 	'settings'  => 'settings.php',
+	'setup'     => 'setup.php',
 	'test-tools' => 'test-tools.php',
 );
 
