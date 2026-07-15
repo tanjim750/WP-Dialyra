@@ -118,7 +118,7 @@ class Wp_Dialyra_Utils {
 			'no_answer_status' => 'no_change',
 			'busy_status'      => 'no_change',
 			'failed_status'    => 'no_change',
-			'order_note'       => __( 'Updated by Dialyra call result.', 'wp-dialyra' ),
+			'skip_call_statuses' => array( 'completed', 'cancelled', 'draft', 'refunded' ),
 		);
 	}
 

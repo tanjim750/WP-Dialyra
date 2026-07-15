@@ -97,9 +97,33 @@
 			});
 		};
 
+		var updateBusinessHoursFields = function( $scope ) {
+			$scope.find( '[data-dialyra-business-hours-group]' ).addBack( '[data-dialyra-business-hours-group]' ).each(function() {
+				var $group = $( this );
+				var isAlwaysActive = $group.find( '[data-dialyra-business-hours-toggle]' ).is( ':checked' );
+
+				$group.find( '[data-dialyra-business-hours-always]' )
+					.prop( 'hidden', ! isAlwaysActive )
+					.toggleClass( 'wp-dialyra-is-hidden', ! isAlwaysActive )
+					.find( 'input, select, textarea, button' )
+					.prop( 'disabled', ! isAlwaysActive );
+
+				$group.find( '[data-dialyra-business-hours-scheduled]' )
+					.prop( 'hidden', isAlwaysActive )
+					.toggleClass( 'wp-dialyra-is-hidden', isAlwaysActive )
+					.find( 'input, select, textarea, button' )
+					.prop( 'disabled', isAlwaysActive );
+			});
+		};
+
 		$( document ).on( 'change', '[data-dialyra-dynamic-select]', function() {
 			var $scope = $( this ).closest( '[data-dialyra-dynamic-group], .wp-dialyra-flow-builder, .wp-dialyra-setup' );
 			updateDynamicFields( $scope.length ? $scope : $( document ) );
+		});
+
+		$( document ).on( 'change', '[data-dialyra-business-hours-toggle]', function() {
+			var $scope = $( this ).closest( '[data-dialyra-business-hours-group]' );
+			updateBusinessHoursFields( $scope.length ? $scope : $( document ) );
 		});
 
 		$( document ).on( 'change', '[data-dialyra-schedule-mode], [data-dialyra-holiday-mode]', function() {
@@ -118,6 +142,34 @@
 				$( 'input[name="dialyra_business_choice"][value="' + selectedBusinessId + '"]' ).prop( 'checked', true );
 				updateSetupBusinessChoice();
 			}
+		});
+
+		var updateSettingsBusinessDetails = function( $select ) {
+			var $option = $select.find( 'option:selected' );
+			var $form = $select.closest( 'form' );
+			var status = String( $option.data( 'status' ) || 'inactive' );
+			var safeStatus = [ 'active', 'inactive', 'suspended', 'deleted' ].indexOf( status ) !== -1 ? status : 'inactive';
+			var timezone = String( $option.data( 'timezone' ) || '' );
+			var $statusDot = $form.find( '[data-dialyra-business-status-dot]' );
+
+			if ( '+06:00' === timezone ) {
+				timezone = 'Asia/Dhaka';
+			}
+
+			$form.find( '[name="dialyra_business_name"]' ).val( $option.data( 'name' ) || '' );
+			$form.find( '[name="dialyra_business_email"]' ).val( $option.data( 'email' ) || '' );
+			$form.find( '[name="dialyra_business_phone"]' ).val( $option.data( 'phone' ) || '' );
+			$form.find( '[name="dialyra_business_timezone"]' ).val( timezone );
+			$form.find( '[name="dialyra_business_country"]' ).val( $option.data( 'country' ) || '' );
+
+			$statusDot
+				.removeClass( 'wp-dialyra-status-dot--active wp-dialyra-status-dot--inactive wp-dialyra-status-dot--suspended wp-dialyra-status-dot--deleted' )
+				.addClass( 'wp-dialyra-status-dot--' + safeStatus )
+				.attr( 'title', 'Business status: ' + status );
+		};
+
+		$( document ).on( 'change', '#wp-dialyra-business-select', function() {
+			updateSettingsBusinessDetails( $( this ) );
 		});
 
 		var updateAgentEditor = function( $select ) {
@@ -195,6 +247,10 @@
 
 			if ( ! $dialog.length ) {
 				return;
+			}
+
+			if ( ! $dialog.parent().is( 'body' ) ) {
+				$dialog.appendTo( document.body );
 			}
 
 			$( '[data-dialyra-dialog]' ).not( $dialog ).prop( 'hidden', true ).removeClass( 'wp-dialyra-dialog--open' );
@@ -300,6 +356,10 @@
 		updateDynamicFields( $( document ) );
 		updateSetupBusinessChoice();
 		updateScheduleFields( $( document ) );
+		updateBusinessHoursFields( $( document ) );
+		$( '#wp-dialyra-business-select' ).each(function() {
+			updateSettingsBusinessDetails( $( this ) );
+		});
 		$( '[data-dialyra-agent-editor]' ).each(function() {
 			updateAgentEditor( $( this ) );
 		});
