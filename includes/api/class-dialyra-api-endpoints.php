@@ -95,7 +95,7 @@ class Dialyra_API_Endpoints {
      * @return   Dialyra_API_Response  The API response.
      */
     public function create_user( $user_data ) {
-        return $this->client->post( 'auth/users', $user_data );
+        return $this->client->post( 'auth/users', $this->sanitize_user_payload( $user_data ) );
     }
 
     /**
@@ -423,10 +423,378 @@ class Dialyra_API_Endpoints {
      * Get a list of agents.
      *
      * @since    1.0.0
+     * @param    array     $query_params    Optional query params, e.g. business_id.
      * @return   Dialyra_API_Response  The API response containing agents data or error.
      */
-    public function get_agents() {
-        return $this->client->get( 'agents' );
+    public function get_agents( $query_params = array() ) {
+        return $this->client->get( 'agents', $this->sanitize_payload( $query_params ) );
+    }
+
+    /**
+     * Create an agent.
+     *
+     * @since    1.0.0
+     * @param    array     $agent_data    Agent fields.
+     * @return   Dialyra_API_Response  The API response containing agent data or error.
+     */
+    public function create_agent( $agent_data ) {
+        return $this->client->post( 'agents', $this->sanitize_agent_payload( $agent_data ) );
+    }
+
+    /**
+     * Get an agent.
+     *
+     * @since    1.0.0
+     * @param    int       $agent_id    Agent ID.
+     * @return   Dialyra_API_Response  The API response containing agent data or error.
+     */
+    public function get_agent( $agent_id ) {
+        return $this->client->get( 'agents/' . absint( $agent_id ) );
+    }
+
+    /**
+     * Update an agent profile.
+     *
+     * @since    1.0.0
+     * @param    int       $agent_id      Agent ID.
+     * @param    array     $agent_data    Agent profile fields.
+     * @return   Dialyra_API_Response  The API response containing agent data or error.
+     */
+    public function update_agent( $agent_id, $agent_data ) {
+        return $this->client->put( 'agents/' . absint( $agent_id ), $this->sanitize_agent_update_payload( $agent_data ) );
+    }
+
+    /**
+     * Delete an agent.
+     *
+     * @since    1.0.0
+     * @param    int       $agent_id    Agent ID.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function delete_agent( $agent_id ) {
+        return $this->client->delete( 'agents/' . absint( $agent_id ) );
+    }
+
+    /**
+     * Update agent availability.
+     *
+     * @since    1.0.0
+     * @param    int       $agent_id               Agent ID.
+     * @param    string    $availability_status    Availability status.
+     * @return   Dialyra_API_Response  The API response containing agent data or error.
+     */
+    public function update_agent_availability( $agent_id, $availability_status ) {
+        return $this->client->post( 'agents/' . absint( $agent_id ) . '/availability', array(
+            'availability_status' => sanitize_key( $availability_status ),
+        ) );
+    }
+
+    /**
+     * Create or update an agent SIP extension.
+     *
+     * @since    1.0.0
+     * @param    array     $extension_data    Extension fields.
+     * @return   Dialyra_API_Response  The API response containing extension data or error.
+     */
+    public function create_agent_extension( $extension_data ) {
+        return $this->client->post( 'agents/extensions', $this->sanitize_agent_extension_payload( $extension_data ) );
+    }
+
+    /**
+     * Get agent extensions.
+     *
+     * @since    1.0.0
+     * @param    array     $query_params    Optional query params, e.g. business_id.
+     * @return   Dialyra_API_Response  The API response containing extension data or error.
+     */
+    public function get_agent_extensions( $query_params = array() ) {
+        return $this->client->get( 'agents/extensions', $this->sanitize_payload( $query_params ) );
+    }
+
+    /**
+     * Get an agent extension row.
+     *
+     * @since    1.0.0
+     * @param    int       $extension_id    Extension assignment ID.
+     * @return   Dialyra_API_Response  The API response containing extension data or error.
+     */
+    public function get_agent_extension( $extension_id ) {
+        return $this->client->get( 'agents/extensions/' . absint( $extension_id ) );
+    }
+
+    /**
+     * Bind an extension row to an agent user.
+     *
+     * @since    1.0.0
+     * @param    int       $extension_id    Extension assignment ID.
+     * @param    array     $bind_data       Bind fields.
+     * @return   Dialyra_API_Response  The API response containing extension data or error.
+     */
+    public function bind_agent_extension( $extension_id, $bind_data ) {
+        return $this->client->post( 'agents/extensions/' . absint( $extension_id ) . '/bind', $this->sanitize_agent_extension_bind_payload( $bind_data ) );
+    }
+
+    /**
+     * Update an extension row active state.
+     *
+     * @since    1.0.0
+     * @param    int       $extension_id      Extension assignment ID.
+     * @param    array     $extension_data    Extension fields.
+     * @return   Dialyra_API_Response  The API response containing extension data or error.
+     */
+    public function update_agent_extension( $extension_id, $extension_data ) {
+        return $this->client->put( 'agents/extensions/' . absint( $extension_id ), $this->sanitize_agent_extension_update_payload( $extension_data ) );
+    }
+
+    /**
+     * Delete an extension row and realtime SIP identity.
+     *
+     * @since    1.0.0
+     * @param    int       $extension_id    Extension assignment ID.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function delete_agent_extension( $extension_id ) {
+        return $this->client->delete( 'agents/extensions/' . absint( $extension_id ) );
+    }
+
+    /**
+     * Assign an existing extension to an agent.
+     *
+     * @since    1.0.0
+     * @param    int       $agent_id         Agent ID.
+     * @param    array     $extension_data   Extension assignment fields.
+     * @return   Dialyra_API_Response  The API response containing agent data or error.
+     */
+    public function assign_agent_extension( $agent_id, $extension_data ) {
+        return $this->client->put( 'agents/' . absint( $agent_id ) . '/extensions', $this->sanitize_agent_extension_assignment_payload( $extension_data ) );
+    }
+
+    // Departments
+
+    /**
+     * Create a department.
+     *
+     * @since    1.0.0
+     * @param    array     $department_data    Department fields.
+     * @return   Dialyra_API_Response  The API response containing department data or error.
+     */
+    public function create_department( $department_data ) {
+        return $this->client->post( 'departments', $this->sanitize_department_payload( $department_data ) );
+    }
+
+    /**
+     * Get departments.
+     *
+     * @since    1.0.0
+     * @param    array     $query_params    Optional query params, e.g. business_id.
+     * @return   Dialyra_API_Response  The API response containing department list data or error.
+     */
+    public function get_departments( $query_params = array() ) {
+        return $this->client->get( 'departments', $this->sanitize_payload( $query_params ) );
+    }
+
+    /**
+     * Get a department.
+     *
+     * @since    1.0.0
+     * @param    int       $department_id    Department ID.
+     * @return   Dialyra_API_Response  The API response containing department data or error.
+     */
+    public function get_department( $department_id ) {
+        return $this->client->get( 'departments/' . absint( $department_id ) );
+    }
+
+    /**
+     * Update a department.
+     *
+     * @since    1.0.0
+     * @param    int       $department_id      Department ID.
+     * @param    array     $department_data    Department fields.
+     * @return   Dialyra_API_Response  The API response containing department data or error.
+     */
+    public function update_department( $department_id, $department_data ) {
+        return $this->client->put( 'departments/' . absint( $department_id ), $this->sanitize_department_payload( $department_data ) );
+    }
+
+    /**
+     * Delete a department.
+     *
+     * @since    1.0.0
+     * @param    int       $department_id    Department ID.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function delete_department( $department_id ) {
+        return $this->client->delete( 'departments/' . absint( $department_id ) );
+    }
+
+    /**
+     * Get department agent mappings.
+     *
+     * @since    1.0.0
+     * @param    int       $department_id    Department ID.
+     * @return   Dialyra_API_Response  The API response containing mapping data or error.
+     */
+    public function get_department_agents( $department_id ) {
+        return $this->client->get( 'departments/' . absint( $department_id ) . '/agents' );
+    }
+
+    /**
+     * Add or update a department agent mapping.
+     *
+     * @since    1.0.0
+     * @param    int       $department_id    Department ID.
+     * @param    array     $mapping_data     Mapping fields.
+     * @return   Dialyra_API_Response  The API response containing mapping data or error.
+     */
+    public function add_department_agent( $department_id, $mapping_data ) {
+        return $this->client->post( 'departments/' . absint( $department_id ) . '/agents', $this->sanitize_department_agent_payload( $mapping_data ) );
+    }
+
+    /**
+     * Update a department agent mapping.
+     *
+     * @since    1.0.0
+     * @param    int       $department_id    Department ID.
+     * @param    array     $mapping_data     Mapping fields.
+     * @return   Dialyra_API_Response  The API response containing mapping data or error.
+     */
+    public function update_department_agent( $department_id, $mapping_data ) {
+        return $this->client->put( 'departments/' . absint( $department_id ) . '/agents', $this->sanitize_department_agent_payload( $mapping_data ) );
+    }
+
+    /**
+     * Remove an agent from a department.
+     *
+     * @since    1.0.0
+     * @param    int       $department_id    Department ID.
+     * @param    int       $agent_id         Agent ID.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function delete_department_agent( $department_id, $agent_id ) {
+        return $this->client->delete( 'departments/' . absint( $department_id ) . '/agents/' . absint( $agent_id ) );
+    }
+
+    /**
+     * Get a department schedule.
+     *
+     * @since    1.0.0
+     * @param    int       $department_id    Department ID.
+     * @return   Dialyra_API_Response  The API response containing schedule data or error.
+     */
+    public function get_department_schedule( $department_id ) {
+        return $this->client->get( 'departments/' . absint( $department_id ) . '/schedule' );
+    }
+
+    /**
+     * Create a department schedule.
+     *
+     * @since    1.0.0
+     * @param    int       $department_id    Department ID.
+     * @param    array     $schedule_data    Schedule fields.
+     * @return   Dialyra_API_Response  The API response containing schedule data or error.
+     */
+    public function create_department_schedule( $department_id, $schedule_data ) {
+        return $this->client->post( 'departments/' . absint( $department_id ) . '/schedule', $this->sanitize_department_schedule_payload( $schedule_data ) );
+    }
+
+    /**
+     * Update a department schedule.
+     *
+     * @since    1.0.0
+     * @param    int       $department_id    Department ID.
+     * @param    array     $schedule_data    Schedule fields.
+     * @return   Dialyra_API_Response  The API response containing schedule data or error.
+     */
+    public function update_department_schedule( $department_id, $schedule_data ) {
+        return $this->client->put( 'departments/' . absint( $department_id ) . '/schedule', $this->sanitize_department_schedule_payload( $schedule_data ) );
+    }
+
+    /**
+     * Set department schedule mode.
+     *
+     * @since    1.0.0
+     * @param    int       $department_id    Department ID.
+     * @param    string    $mode             Availability mode.
+     * @return   Dialyra_API_Response  The API response containing schedule data or error.
+     */
+    public function set_department_schedule_mode( $department_id, $mode ) {
+        return $this->client->post( 'departments/' . absint( $department_id ) . '/schedule/' . sanitize_key( $mode ) );
+    }
+
+    /**
+     * Get department live readiness.
+     *
+     * @since    1.0.0
+     * @param    int       $department_id    Department ID.
+     * @return   Dialyra_API_Response  The API response containing live readiness data or error.
+     */
+    public function get_department_live( $department_id ) {
+        return $this->client->get( 'departments/' . absint( $department_id ) . '/live' );
+    }
+
+    // Audio Assets
+
+    /**
+     * Upload an audio asset.
+     *
+     * @since    1.0.0
+     * @param    array    $audio_data    Audio fields.
+     * @param    array    $file          Uploaded file array.
+     * @return   Dialyra_API_Response
+     */
+    public function upload_audio_asset( $audio_data, $file ) {
+        return $this->client->post_multipart(
+            'audio-assets/upload',
+            $this->sanitize_audio_asset_payload( $audio_data ),
+            array(
+                'file' => $file,
+            )
+        );
+    }
+
+    /**
+     * Get audio assets.
+     *
+     * @since    1.0.0
+     * @param    array    $query_params    Optional query params.
+     * @return   Dialyra_API_Response
+     */
+    public function get_audio_assets( $query_params = array() ) {
+        return $this->client->get( 'audio-assets', $this->sanitize_payload( $query_params ) );
+    }
+
+    /**
+     * Update an audio asset.
+     *
+     * @since    1.0.0
+     * @param    int      $audio_asset_id    Audio asset ID.
+     * @param    array    $audio_data        Audio fields.
+     * @return   Dialyra_API_Response
+     */
+    public function update_audio_asset( $audio_asset_id, $audio_data ) {
+        return $this->client->put( 'audio-assets/' . absint( $audio_asset_id ), $this->sanitize_audio_asset_payload( $audio_data ) );
+    }
+
+    /**
+     * Delete an audio asset.
+     *
+     * @since    1.0.0
+     * @param    int    $audio_asset_id    Audio asset ID.
+     * @return   Dialyra_API_Response
+     */
+    public function delete_audio_asset( $audio_asset_id ) {
+        return $this->client->delete( 'audio-assets/' . absint( $audio_asset_id ) );
+    }
+
+    /**
+     * Stream an audio asset.
+     *
+     * @since    1.0.0
+     * @param    int    $audio_asset_id    Audio asset ID.
+     * @return   array|WP_Error
+     */
+    public function stream_audio_asset( $audio_asset_id ) {
+        return $this->client->get_raw( 'audio-assets/' . absint( $audio_asset_id ) . '/stream' );
     }
 
     // Flows
@@ -661,6 +1029,34 @@ class Dialyra_API_Endpoints {
     }
 
     /**
+     * Sanitize a user creation payload.
+     *
+     * @since    1.0.0
+     * @param    array     $user_data    Raw user data.
+     * @return   array
+     */
+    private function sanitize_user_payload( $user_data ) {
+        $payload = $this->sanitize_allowed_payload( $user_data, array(
+            'full_name',
+            'email',
+            'password',
+            'role',
+            'business_id',
+            'membership_role',
+        ) );
+
+        if ( isset( $payload['email'] ) ) {
+            $payload['email'] = sanitize_email( $payload['email'] );
+        }
+
+        if ( isset( $payload['business_id'] ) ) {
+            $payload['business_id'] = absint( $payload['business_id'] );
+        }
+
+        return $payload;
+    }
+
+    /**
      * Sanitize an access token payload.
      *
      * @since    1.0.0
@@ -685,6 +1081,263 @@ class Dialyra_API_Endpoints {
 
         if ( isset( $payload['scopes'] ) && is_array( $payload['scopes'] ) ) {
             $payload['scopes'] = array_values( array_filter( array_map( 'sanitize_text_field', $payload['scopes'] ) ) );
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize an audio asset payload.
+     *
+     * @since    1.0.0
+     * @param    array    $audio_data    Raw audio data.
+     * @return   array
+     */
+    private function sanitize_audio_asset_payload( $audio_data ) {
+        $payload = $this->sanitize_allowed_payload( $audio_data, array(
+            'business_id',
+            'name',
+            'category',
+        ) );
+
+        if ( isset( $payload['business_id'] ) ) {
+            $payload['business_id'] = absint( $payload['business_id'] );
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize an agent create payload.
+     *
+     * @since    1.0.0
+     * @param    array     $agent_data    Raw agent data.
+     * @return   array
+     */
+    private function sanitize_agent_payload( $agent_data ) {
+        $payload = $this->sanitize_allowed_payload( $agent_data, array(
+            'business_id',
+            'user_id',
+            'name',
+            'email',
+            'phone',
+            'sip_extension',
+            'status',
+            'availability_status',
+            'max_concurrent_calls',
+            'current_active_calls',
+            'skills',
+            'metadata',
+        ) );
+
+        foreach ( array( 'business_id', 'user_id', 'max_concurrent_calls', 'current_active_calls' ) as $integer_field ) {
+            if ( isset( $payload[ $integer_field ] ) ) {
+                $payload[ $integer_field ] = absint( $payload[ $integer_field ] );
+            }
+        }
+
+        if ( isset( $payload['email'] ) ) {
+            $payload['email'] = sanitize_email( $payload['email'] );
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize an agent profile update payload.
+     *
+     * @since    1.0.0
+     * @param    array     $agent_data    Raw agent data.
+     * @return   array
+     */
+    private function sanitize_agent_update_payload( $agent_data ) {
+        $payload = $this->sanitize_allowed_payload( $agent_data, array(
+            'name',
+            'phone',
+            'status',
+            'availability_status',
+            'max_concurrent_calls',
+            'skills',
+        ) );
+
+        if ( isset( $payload['max_concurrent_calls'] ) ) {
+            $payload['max_concurrent_calls'] = max( 1, absint( $payload['max_concurrent_calls'] ) );
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize an agent SIP extension payload.
+     *
+     * @since    1.0.0
+     * @param    array     $extension_data    Raw extension data.
+     * @return   array
+     */
+    private function sanitize_agent_extension_payload( $extension_data ) {
+        $payload = $this->sanitize_allowed_payload( $extension_data, array(
+            'business_id',
+            'user_id',
+            'extension',
+            'password',
+            'display_name',
+            'transport',
+            'context',
+            'allow',
+            'dtmf_mode',
+            'max_contacts',
+            'qualify_frequency',
+            'remove_existing',
+        ) );
+
+        foreach ( array( 'business_id', 'user_id', 'max_contacts', 'qualify_frequency' ) as $integer_field ) {
+            if ( isset( $payload[ $integer_field ] ) ) {
+                $payload[ $integer_field ] = absint( $payload[ $integer_field ] );
+            }
+        }
+
+        if ( isset( $payload['remove_existing'] ) ) {
+            $payload['remove_existing'] = (bool) $payload['remove_existing'];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize an extension bind payload.
+     *
+     * @since    1.0.0
+     * @param    array     $bind_data    Raw bind data.
+     * @return   array
+     */
+    private function sanitize_agent_extension_bind_payload( $bind_data ) {
+        $payload = $this->sanitize_allowed_payload( $bind_data, array(
+            'user_id',
+            'is_primary',
+        ) );
+
+        if ( isset( $payload['user_id'] ) ) {
+            $payload['user_id'] = absint( $payload['user_id'] );
+        }
+
+        if ( isset( $payload['is_primary'] ) ) {
+            $payload['is_primary'] = (bool) $payload['is_primary'];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize an extension active-state update payload.
+     *
+     * @since    1.0.0
+     * @param    array     $extension_data    Raw extension data.
+     * @return   array
+     */
+    private function sanitize_agent_extension_update_payload( $extension_data ) {
+        $payload = $this->sanitize_allowed_payload( $extension_data, array(
+            'is_active',
+        ) );
+
+        if ( isset( $payload['is_active'] ) ) {
+            $payload['is_active'] = (bool) $payload['is_active'];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize an existing extension assignment payload.
+     *
+     * @since    1.0.0
+     * @param    array     $extension_data    Raw extension data.
+     * @return   array
+     */
+    private function sanitize_agent_extension_assignment_payload( $extension_data ) {
+        $payload = $this->sanitize_allowed_payload( $extension_data, array(
+            'extension',
+            'transfer',
+        ) );
+
+        if ( isset( $payload['transfer'] ) ) {
+            $payload['transfer'] = (bool) $payload['transfer'];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize a department payload.
+     *
+     * @since    1.0.0
+     * @param    array     $department_data    Raw department data.
+     * @return   array
+     */
+    private function sanitize_department_payload( $department_data ) {
+        $payload = $this->sanitize_allowed_payload( $department_data, array(
+            'business_id',
+            'name',
+            'description',
+            'status',
+            'strategy',
+            'metadata',
+        ) );
+
+        if ( isset( $payload['business_id'] ) ) {
+            $payload['business_id'] = absint( $payload['business_id'] );
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize a department-agent mapping payload.
+     *
+     * @since    1.0.0
+     * @param    array     $mapping_data    Raw mapping data.
+     * @return   array
+     */
+    private function sanitize_department_agent_payload( $mapping_data ) {
+        $payload = $this->sanitize_allowed_payload( $mapping_data, array(
+            'agent_id',
+            'priority',
+            'is_active',
+        ) );
+
+        if ( isset( $payload['agent_id'] ) ) {
+            $payload['agent_id'] = absint( $payload['agent_id'] );
+        }
+
+        if ( isset( $payload['priority'] ) ) {
+            $payload['priority'] = max( 1, absint( $payload['priority'] ) );
+        }
+
+        if ( isset( $payload['is_active'] ) ) {
+            $payload['is_active'] = (bool) $payload['is_active'];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize a department schedule payload.
+     *
+     * @since    1.0.0
+     * @param    array     $schedule_data    Raw schedule data.
+     * @return   array
+     */
+    private function sanitize_department_schedule_payload( $schedule_data ) {
+        $payload = $this->sanitize_allowed_payload( $schedule_data, array(
+            'availability_mode',
+            'timezone',
+            'weekly_hours',
+            'holiday_overrides',
+            'is_active',
+            'metadata',
+        ) );
+
+        if ( isset( $payload['is_active'] ) ) {
+            $payload['is_active'] = (bool) $payload['is_active'];
         }
 
         return $payload;

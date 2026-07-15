@@ -45,9 +45,25 @@ $wp_dialyra_business_hours_defaults = isset( $wp_dialyra_setup_defaults['busines
 $wp_dialyra_call_trigger_defaults = isset( $wp_dialyra_setup_defaults['call_trigger'] ) ? $wp_dialyra_setup_defaults['call_trigger'] : array();
 $wp_dialyra_status_mapping_defaults = isset( $wp_dialyra_setup_defaults['order_status_map'] ) ? $wp_dialyra_setup_defaults['order_status_map'] : array();
 $wp_dialyra_capacity_defaults = isset( $wp_dialyra_setup_defaults['call_capacity'] ) ? $wp_dialyra_setup_defaults['call_capacity'] : array();
-$wp_dialyra_timezone = ! empty( $wp_dialyra_business_hours_defaults['timezone'] ) ? $wp_dialyra_business_hours_defaults['timezone'] : wp_timezone_string();
+$wp_dialyra_default_timezone = class_exists( 'Wp_Dialyra_Utils' ) ? Wp_Dialyra_Utils::get_default_timezone() : 'UTC';
+$wp_dialyra_normalize_timezone = static function ( $timezone ) use ( $wp_dialyra_default_timezone ) {
+	$timezone = sanitize_text_field( $timezone );
+
+	if ( $timezone && in_array( $timezone, timezone_identifiers_list(), true ) ) {
+		return $timezone;
+	}
+
+	if ( '+06:00' === $timezone ) {
+		return 'Asia/Dhaka';
+	}
+
+	return $wp_dialyra_default_timezone;
+};
+$wp_dialyra_timezone = ! empty( $wp_dialyra_business_hours_defaults['timezone'] ) ? $wp_dialyra_normalize_timezone( $wp_dialyra_business_hours_defaults['timezone'] ) : $wp_dialyra_default_timezone;
 $wp_dialyra_business_days = class_exists( 'Wp_Dialyra_Utils' ) ? Wp_Dialyra_Utils::get_business_hour_days() : array();
 $wp_dialyra_selected_days = ! empty( $wp_dialyra_business_hours_defaults['days'] ) ? $wp_dialyra_business_hours_defaults['days'] : array( 'all' );
+$wp_dialyra_selected_days = array_values( array_intersect( array_map( 'sanitize_key', $wp_dialyra_selected_days ), array_keys( $wp_dialyra_business_days ) ) );
+$wp_dialyra_selected_days = ! empty( $wp_dialyra_selected_days ) ? $wp_dialyra_selected_days : array( 'all' );
 $wp_dialyra_plugin = class_exists( 'Wp_Dialyra' ) ? Wp_Dialyra::get_instance() : null;
 $wp_dialyra_api_endpoints = $wp_dialyra_plugin ? $wp_dialyra_plugin->get_api_endpoints() : null;
 $wp_dialyra_business_manager = $wp_dialyra_plugin ? $wp_dialyra_plugin->get_business_manager() : null;
@@ -60,8 +76,10 @@ if ( $wp_dialyra_business_manager ) {
 	$wp_dialyra_call_trigger_defaults = isset( $wp_dialyra_setup_defaults['call_trigger'] ) ? $wp_dialyra_setup_defaults['call_trigger'] : array();
 	$wp_dialyra_status_mapping_defaults = isset( $wp_dialyra_setup_defaults['order_status_map'] ) ? $wp_dialyra_setup_defaults['order_status_map'] : array();
 	$wp_dialyra_capacity_defaults = isset( $wp_dialyra_setup_defaults['call_capacity'] ) ? $wp_dialyra_setup_defaults['call_capacity'] : array();
-	$wp_dialyra_timezone = ! empty( $wp_dialyra_business_hours_defaults['timezone'] ) ? $wp_dialyra_business_hours_defaults['timezone'] : wp_timezone_string();
+	$wp_dialyra_timezone = ! empty( $wp_dialyra_business_hours_defaults['timezone'] ) ? $wp_dialyra_normalize_timezone( $wp_dialyra_business_hours_defaults['timezone'] ) : $wp_dialyra_default_timezone;
 	$wp_dialyra_selected_days = ! empty( $wp_dialyra_business_hours_defaults['days'] ) ? $wp_dialyra_business_hours_defaults['days'] : array( 'all' );
+	$wp_dialyra_selected_days = array_values( array_intersect( array_map( 'sanitize_key', $wp_dialyra_selected_days ), array_keys( $wp_dialyra_business_days ) ) );
+	$wp_dialyra_selected_days = ! empty( $wp_dialyra_selected_days ) ? $wp_dialyra_selected_days : array( 'all' );
 }
 
 $wp_dialyra_trigger_mode = ! empty( $wp_dialyra_call_trigger_defaults['mode'] ) ? sanitize_key( $wp_dialyra_call_trigger_defaults['mode'] ) : 'instant';
@@ -213,7 +231,7 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 		$new_business_name    = isset( $_POST['dialyra_new_business_name'] ) ? sanitize_text_field( wp_unslash( $_POST['dialyra_new_business_name'] ) ) : '';
 		$new_business_email   = isset( $_POST['dialyra_new_business_email'] ) ? sanitize_email( wp_unslash( $_POST['dialyra_new_business_email'] ) ) : '';
 		$new_business_phone   = isset( $_POST['dialyra_new_business_phone'] ) ? sanitize_text_field( wp_unslash( $_POST['dialyra_new_business_phone'] ) ) : '';
-		$new_business_timezone = isset( $_POST['dialyra_new_business_timezone'] ) ? sanitize_text_field( wp_unslash( $_POST['dialyra_new_business_timezone'] ) ) : '';
+		$new_business_timezone = isset( $_POST['dialyra_new_business_timezone'] ) ? $wp_dialyra_normalize_timezone( wp_unslash( $_POST['dialyra_new_business_timezone'] ) ) : $wp_dialyra_default_timezone;
 
 		if ( empty( $new_business_name ) || empty( $new_business_email ) ) {
 			$error_message = esc_html__( 'Business name and email are required.', 'wp-dialyra' );
@@ -266,6 +284,15 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 	}
 
 	if ( empty( $error_message ) ) {
+		$business_hours_mode = isset( $_POST['dialyra_business_hours_mode'] ) ? sanitize_key( wp_unslash( $_POST['dialyra_business_hours_mode'] ) ) : 'always_active';
+		$business_hours_days = isset( $_POST['dialyra_business_hours_days'] ) && is_array( $_POST['dialyra_business_hours_days'] ) ? array_map( 'sanitize_key', wp_unslash( $_POST['dialyra_business_hours_days'] ) ) : array();
+		$business_hours_days = array_values( array_intersect( $business_hours_days, array_keys( $wp_dialyra_business_days ) ) );
+		$business_hours_days = ! empty( $business_hours_days ) ? $business_hours_days : array( 'all' );
+
+		if ( 'always_active' === $business_hours_mode ) {
+			$business_hours_days = array( 'all' );
+		}
+
 		$setup_settings = array(
 			'business_id'      => class_exists( 'Dialyra_Auth_Manager' ) ? absint( Dialyra_Auth_Manager::get_business_id() ) : 0,
 			'default_flow_id'  => $selected_flow_id,
@@ -280,9 +307,9 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 				'only_during_business_hours'   => ! empty( $_POST['dialyra_retry_business_hours'] ),
 			),
 			'business_hours'   => array(
-				'availability_mode' => isset( $_POST['dialyra_business_hours_mode'] ) ? sanitize_key( wp_unslash( $_POST['dialyra_business_hours_mode'] ) ) : 'always_active',
-				'timezone'          => isset( $_POST['dialyra_business_hours_timezone'] ) ? sanitize_text_field( wp_unslash( $_POST['dialyra_business_hours_timezone'] ) ) : $wp_dialyra_timezone,
-				'days'              => isset( $_POST['dialyra_business_hours_days'] ) && is_array( $_POST['dialyra_business_hours_days'] ) ? array_map( 'sanitize_key', wp_unslash( $_POST['dialyra_business_hours_days'] ) ) : array( 'all' ),
+				'availability_mode' => $business_hours_mode,
+				'timezone'          => isset( $_POST['dialyra_business_hours_timezone'] ) ? $wp_dialyra_normalize_timezone( wp_unslash( $_POST['dialyra_business_hours_timezone'] ) ) : $wp_dialyra_timezone,
+				'days'              => $business_hours_days,
 				'open_time'         => isset( $_POST['dialyra_business_hours_open'] ) ? sanitize_text_field( wp_unslash( $_POST['dialyra_business_hours_open'] ) ) : '09:00',
 				'close_time'        => isset( $_POST['dialyra_business_hours_close'] ) ? sanitize_text_field( wp_unslash( $_POST['dialyra_business_hours_close'] ) ) : '18:00',
 			),
@@ -304,8 +331,10 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 			$wp_dialyra_call_trigger_defaults = isset( $wp_dialyra_setup_defaults['call_trigger'] ) ? $wp_dialyra_setup_defaults['call_trigger'] : array();
 			$wp_dialyra_status_mapping_defaults = isset( $wp_dialyra_setup_defaults['order_status_map'] ) ? $wp_dialyra_setup_defaults['order_status_map'] : array();
 			$wp_dialyra_capacity_defaults = isset( $wp_dialyra_setup_defaults['call_capacity'] ) ? $wp_dialyra_setup_defaults['call_capacity'] : array();
-			$wp_dialyra_timezone = ! empty( $wp_dialyra_business_hours_defaults['timezone'] ) ? $wp_dialyra_business_hours_defaults['timezone'] : wp_timezone_string();
+			$wp_dialyra_timezone = ! empty( $wp_dialyra_business_hours_defaults['timezone'] ) ? $wp_dialyra_normalize_timezone( $wp_dialyra_business_hours_defaults['timezone'] ) : $wp_dialyra_default_timezone;
 			$wp_dialyra_selected_days = ! empty( $wp_dialyra_business_hours_defaults['days'] ) ? $wp_dialyra_business_hours_defaults['days'] : array( 'all' );
+			$wp_dialyra_selected_days = array_values( array_intersect( array_map( 'sanitize_key', $wp_dialyra_selected_days ), array_keys( $wp_dialyra_business_days ) ) );
+			$wp_dialyra_selected_days = ! empty( $wp_dialyra_selected_days ) ? $wp_dialyra_selected_days : array( 'all' );
 			$wp_dialyra_trigger_mode = ! empty( $wp_dialyra_call_trigger_defaults['mode'] ) ? sanitize_key( $wp_dialyra_call_trigger_defaults['mode'] ) : 'instant';
 			$wp_dialyra_trigger_status = ! empty( $wp_dialyra_call_trigger_defaults['order_status'] ) ? sanitize_key( $wp_dialyra_call_trigger_defaults['order_status'] ) : 'processing';
 			$wp_dialyra_default_flow_id = absint( isset( $wp_dialyra_setup_defaults['default_flow_id'] ) ? $wp_dialyra_setup_defaults['default_flow_id'] : 0 );
@@ -731,8 +760,23 @@ if ( $wp_dialyra_flow_manager && $wp_dialyra_selected_business_id ) {
 								<label for="wp-dialyra-setup-hours-timezone"><?php esc_html_e( 'Timezone', 'wp-dialyra' ); ?></label>
 								<input id="wp-dialyra-setup-hours-timezone" name="dialyra_business_hours_timezone" type="text" value="<?php echo esc_attr( $wp_dialyra_timezone ); ?>">
 							</div>
-							<div class="wp-dialyra-settings-row wp-dialyra-day-picker-row" data-dialyra-show-for="always_active scheduled">
-								<span class="wp-dialyra-setup-label"><?php esc_html_e( 'Selected days', 'wp-dialyra' ); ?></span>
+							<div class="wp-dialyra-settings-row" data-dialyra-show-for="always_active" hidden>
+								<span class="wp-dialyra-setup-label"><?php esc_html_e( 'Calling days', 'wp-dialyra' ); ?></span>
+								<div class="wp-dialyra-setup-muted-card">
+									<strong><?php esc_html_e( 'All days selected', 'wp-dialyra' ); ?></strong>
+									<small><?php esc_html_e( 'Dialyra can place calls any day, all day. No schedule fields are needed.', 'wp-dialyra' ); ?></small>
+								</div>
+							</div>
+							<div class="wp-dialyra-settings-row" data-dialyra-show-for="paused" hidden>
+								<span class="wp-dialyra-setup-label"><?php esc_html_e( 'Calling days', 'wp-dialyra' ); ?></span>
+								<div class="wp-dialyra-setup-muted-card">
+									<strong><?php esc_html_e( 'Calling is paused', 'wp-dialyra' ); ?></strong>
+									<small><?php esc_html_e( 'Day and time settings are hidden until scheduled calling is enabled.', 'wp-dialyra' ); ?></small>
+								</div>
+							</div>
+							<div class="wp-dialyra-settings-row wp-dialyra-day-picker-row" data-dialyra-show-for="scheduled" hidden>
+								<span class="wp-dialyra-setup-label"><?php esc_html_e( 'Calling days', 'wp-dialyra' ); ?></span>
+								<small><?php esc_html_e( 'Choose which days Dialyra can place calls.', 'wp-dialyra' ); ?></small>
 								<div class="wp-dialyra-day-picker" aria-label="<?php esc_attr_e( 'Select calling days', 'wp-dialyra' ); ?>">
 									<?php foreach ( $wp_dialyra_business_days as $wp_dialyra_day_key => $wp_dialyra_day_label ) : ?>
 										<label>
@@ -741,7 +785,6 @@ if ( $wp_dialyra_flow_manager && $wp_dialyra_selected_business_id ) {
 										</label>
 									<?php endforeach; ?>
 								</div>
-								<small><?php esc_html_e( 'Always active uses All by default. Scheduled hours can be limited to selected days.', 'wp-dialyra' ); ?></small>
 							</div>
 							<div class="wp-dialyra-settings-row" data-dialyra-show-for="scheduled" hidden>
 								<label for="wp-dialyra-setup-hours-open"><?php esc_html_e( 'Open time', 'wp-dialyra' ); ?></label>

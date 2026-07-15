@@ -181,6 +181,14 @@ class Wp_Dialyra_Utils {
 	public static function get_default_timezone() {
 		$timezone = function_exists( 'wp_timezone_string' ) ? wp_timezone_string() : '';
 
-		return $timezone ? $timezone : 'UTC';
+		if ( $timezone && in_array( $timezone, timezone_identifiers_list(), true ) ) {
+			return $timezone;
+		}
+
+		if ( '+06:00' === $timezone ) {
+			return 'Asia/Dhaka';
+		}
+
+		return 'UTC';
 	}
 }

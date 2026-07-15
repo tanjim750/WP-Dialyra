@@ -62,6 +62,34 @@ class Dialyra_API_Client {
     }
 
     /**
+     * Send a multipart POST request.
+     *
+     * @since    1.0.0
+     * @param    string    $endpoint      The API endpoint.
+     * @param    array     $fields        Text fields.
+     * @param    array     $files         File fields keyed by field name.
+     * @param    bool      $authenticated Whether the request requires authentication.
+     * @return   Dialyra_API_Response  A structured API response object.
+     */
+    public function post_multipart( $endpoint, $fields = array(), $files = array(), $authenticated = true ) {
+        $boundary = wp_generate_password( 24, false, false );
+        $body = $this->build_multipart_body( $fields, $files, $boundary );
+
+        return $this->request(
+            'POST',
+            $this->build_url( $endpoint ),
+            array(
+                'body'    => $body,
+                'headers' => array(
+                    'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
+                ),
+                'raw_body' => true,
+            ),
+            $authenticated
+        );
+    }
+
+    /**
      * Send a PUT request.
      *
      * @since    1.0.0
@@ -98,6 +126,42 @@ class Dialyra_API_Client {
      */
     public function delete( $endpoint, $body = array(), $authenticated = true ) {
         return $this->request( 'DELETE', $this->build_url( $endpoint ), array( 'body' => $body ), $authenticated );
+    }
+
+    /**
+     * Send a raw GET request for binary responses.
+     *
+     * @since    1.0.0
+     * @param    string    $endpoint      The API endpoint.
+     * @param    array     $query_params  Optional query parameters.
+     * @param    bool      $authenticated Whether the request requires authentication.
+     * @return   array|WP_Error
+     */
+    public function get_raw( $endpoint, $query_params = array(), $authenticated = true ) {
+        $url = add_query_arg( $query_params, $this->build_url( $endpoint ) );
+        $headers = $this->config->get_common_headers();
+        $headers['Accept'] = '*/*';
+
+        if ( $authenticated ) {
+            require_once plugin_dir_path( dirname( __FILE__ ) ) . 'auth/class-dialyra-auth-manager.php';
+            $access_token = Dialyra_Auth_Manager::get_access_token();
+
+            if ( ! $access_token ) {
+                return new WP_Error( 'unauthenticated', esc_html__( 'Authentication token missing.', 'wp-dialyra' ) );
+            }
+
+            $headers['Authorization'] = 'Bearer ' . $access_token;
+        }
+
+        unset( $headers['Content-Type'] );
+
+        return wp_remote_get(
+            esc_url_raw( $url ),
+            array(
+                'headers' => $headers,
+                'timeout' => $this->config->get_timeout(),
+            )
+        );
     }
 
     /**
@@ -143,7 +207,7 @@ class Dialyra_API_Client {
         );
 
         if ( isset( $args['body'] ) ) {
-            $request_args['body'] = wp_json_encode( $args['body'] );
+            $request_args['body'] = ! empty( $args['raw_body'] ) ? $args['body'] : wp_json_encode( $args['body'] );
         }
 
         // Validate URL before sending request.
@@ -172,5 +236,47 @@ class Dialyra_API_Client {
         }
 
         return new Dialyra_API_Response( $data, $http_code, null, null, $body );
+    }
+
+    /**
+     * Build a multipart/form-data request body.
+     *
+     * @since    1.0.0
+     * @param    array     $fields      Text fields.
+     * @param    array     $files       File fields.
+     * @param    string    $boundary    Multipart boundary.
+     * @return   string
+     */
+    private function build_multipart_body( $fields, $files, $boundary ) {
+        $body = '';
+
+        foreach ( $fields as $name => $value ) {
+            $body .= '--' . $boundary . "\r\n";
+            $body .= 'Content-Disposition: form-data; name="' . sanitize_key( $name ) . '"' . "\r\n\r\n";
+            $body .= sanitize_text_field( $value ) . "\r\n";
+        }
+
+        foreach ( $files as $name => $file ) {
+            if ( empty( $file['tmp_name'] ) || ! is_uploaded_file( $file['tmp_name'] ) ) {
+                continue;
+            }
+
+            $filename = ! empty( $file['name'] ) ? sanitize_file_name( $file['name'] ) : 'audio.wav';
+            $mime_type = ! empty( $file['type'] ) ? sanitize_text_field( $file['type'] ) : 'application/octet-stream';
+            $contents = file_get_contents( $file['tmp_name'] );
+
+            if ( false === $contents ) {
+                continue;
+            }
+
+            $body .= '--' . $boundary . "\r\n";
+            $body .= 'Content-Disposition: form-data; name="' . sanitize_key( $name ) . '"; filename="' . $filename . '"' . "\r\n";
+            $body .= 'Content-Type: ' . $mime_type . "\r\n\r\n";
+            $body .= $contents . "\r\n";
+        }
+
+        $body .= '--' . $boundary . "--\r\n";
+
+        return $body;
     }
 }

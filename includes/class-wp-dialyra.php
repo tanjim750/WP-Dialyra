@@ -251,6 +251,7 @@ class Wp_Dialyra {
 		$this->loader->add_action( 'in_admin_header', $plugin_admin, 'remove_admin_notices', 1 );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		$this->loader->add_action( 'admin_post_wp_dialyra_stream_audio', $plugin_admin, 'stream_audio_asset' );
 
 	}
 
