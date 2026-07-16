@@ -10,6 +10,8 @@
 if ( ! defined( 'WPINC' ) ) {
 	die;
 }
+
+$wp_dialyra_sip_domain = defined( 'WP_DIALYRA_SIP_DOMAIN' ) ? sanitize_text_field( WP_DIALYRA_SIP_DOMAIN ) : 'dialyra.com';
 ?>
 
 <section class="wp-dialyra-test-tools">
@@ -153,7 +155,20 @@ if ( ! defined( 'WPINC' ) ) {
 
 				<div class="wp-dialyra-agent-call-requirement">
 					<strong><?php esc_html_e( 'Before testing', 'wp-dialyra' ); ?></strong>
-					<p><?php esc_html_e( 'The agent must be logged in to a SIP calling app with the extension username and password provided by Dialyra. Apps like Linphone can be used. If the agent is not logged in, their phone cannot ring.', 'wp-dialyra' ); ?></p>
+					<p>
+						<?php
+						echo wp_kses(
+							sprintf(
+								/* translators: %s: SIP domain. */
+								esc_html__( 'The agent must be logged in to a SIP calling app such as Linphone with the extension username, password, and domain %s. If the agent is not logged in, their phone cannot ring.', 'wp-dialyra' ),
+								'<code>' . esc_html( $wp_dialyra_sip_domain ) . '</code>'
+							),
+							array(
+								'code' => array(),
+							)
+						);
+						?>
+					</p>
 				</div>
 			</div>
 

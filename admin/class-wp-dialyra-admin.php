@@ -149,6 +149,60 @@ class Wp_Dialyra_Admin {
 	}
 
 	/**
+	 * Stream an authenticated Dialyra audio asset through WordPress admin.
+	 *
+	 * @since    1.0.0
+	 */
+	public function stream_audio_asset() {
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to stream this audio asset.', 'wp-dialyra' ), '', array( 'response' => 403 ) );
+		}
+
+		$audio_asset_id = isset( $_GET['audio_asset_id'] ) ? absint( wp_unslash( $_GET['audio_asset_id'] ) ) : 0;
+
+		if ( ! $audio_asset_id || ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_key( $_GET['_wpnonce'] ), 'wp-dialyra-stream-audio-' . $audio_asset_id ) ) {
+			wp_die( esc_html__( 'Invalid audio stream request.', 'wp-dialyra' ), '', array( 'response' => 400 ) );
+		}
+
+		$plugin = class_exists( 'Wp_Dialyra' ) ? Wp_Dialyra::get_instance() : null;
+		$api_endpoints = $plugin ? $plugin->get_api_endpoints() : null;
+
+		if ( ! $api_endpoints ) {
+			wp_die( esc_html__( 'Audio service is not available.', 'wp-dialyra' ), '', array( 'response' => 503 ) );
+		}
+
+		$response = $api_endpoints->stream_audio_asset( $audio_asset_id );
+
+		if ( is_wp_error( $response ) ) {
+			wp_die( esc_html( $response->get_error_message() ), '', array( 'response' => 502 ) );
+		}
+
+		$status_code = wp_remote_retrieve_response_code( $response );
+
+		if ( $status_code < 200 || $status_code >= 300 ) {
+			wp_die( esc_html__( 'Unable to stream audio from Dialyra.', 'wp-dialyra' ), '', array( 'response' => $status_code ? $status_code : 502 ) );
+		}
+
+		$content_type = wp_remote_retrieve_header( $response, 'content-type' );
+		$content_length = wp_remote_retrieve_header( $response, 'content-length' );
+		$body = wp_remote_retrieve_body( $response );
+
+		if ( ! headers_sent() ) {
+			header( 'Content-Type: ' . ( $content_type ? $content_type : 'audio/wav' ) );
+			header( 'Content-Disposition: inline; filename="dialyra-audio-' . $audio_asset_id . '.wav"' );
+
+			if ( $content_length ) {
+				header( 'Content-Length: ' . absint( $content_length ) );
+			}
+		}
+
+		echo $body; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		exit;
+
+	}
+
+	/**
 	 * Check whether the current admin screen belongs to WP Dialyra.
 	 *
 	 * @since    1.0.0

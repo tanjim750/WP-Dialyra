@@ -30,6 +30,15 @@
 class Wp_Dialyra {
 
 	/**
+	 * Singleton plugin instance.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 * @var      Wp_Dialyra
+	 */
+	private static $instance = null;
+
+	/**
 	 * The loader that's responsible for maintaining and registering all hooks that power
 	 * the plugin.
 	 *
@@ -58,6 +67,51 @@ class Wp_Dialyra {
 	protected $version;
 
 	/**
+	 * The Dialyra API config object.
+	 *
+	 * @since    1.0.0
+	 * @access   protected
+	 * @var      Dialyra_API_Config
+	 */
+	protected $api_config;
+
+	/**
+	 * The Dialyra API client object.
+	 *
+	 * @since    1.0.0
+	 * @access   protected
+	 * @var      Dialyra_API_Client
+	 */
+	protected $api_client;
+
+	/**
+	 * The Dialyra API endpoints object.
+	 *
+	 * @since    1.0.0
+	 * @access   protected
+	 * @var      Dialyra_API_Endpoints
+	 */
+	protected $api_endpoints;
+
+	/**
+	 * The Dialyra business manager object.
+	 *
+	 * @since    1.0.0
+	 * @access   protected
+	 * @var      Dialyra_Business_Manager
+	 */
+	protected $business_manager;
+
+	/**
+	 * The Dialyra flow manager object.
+	 *
+	 * @since    1.0.0
+	 * @access   protected
+	 * @var      Dialyra_Flow_Manager
+	 */
+	protected $flow_manager;
+
+	/**
 	 * Define the core functionality of the plugin.
 	 *
 	 * Set the plugin name and the plugin version that can be used throughout the plugin.
@@ -67,6 +121,8 @@ class Wp_Dialyra {
 	 * @since    1.0.0
 	 */
 	public function __construct() {
+		self::$instance = $this;
+
 		if ( defined( 'WP_DIALYRA_VERSION' ) ) {
 			$this->version = WP_DIALYRA_VERSION;
 		} else {
@@ -75,10 +131,35 @@ class Wp_Dialyra {
 		$this->plugin_name = 'wp-dialyra';
 
 		$this->load_dependencies();
+		$this->define_api_services();
 		$this->set_locale();
 		$this->define_admin_hooks();
 		$this->define_public_hooks();
 
+	}
+
+	/**
+	 * Get the singleton plugin instance.
+	 *
+	 * @since     1.0.0
+	 * @return    Wp_Dialyra|null    The plugin instance.
+	 */
+	public static function get_instance() {
+		return self::$instance;
+	}
+
+	/**
+	 * Define shared API services.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 */
+	private function define_api_services() {
+		$this->api_config       = new Dialyra_API_Config();
+		$this->api_client       = new Dialyra_API_Client( $this->api_config );
+		$this->api_endpoints    = new Dialyra_API_Endpoints( $this->api_client );
+		$this->business_manager = new Dialyra_Business_Manager( $this->api_client, $this->api_endpoints );
+		$this->flow_manager     = new Dialyra_Flow_Manager( $this->api_endpoints );
 	}
 
 	/**
@@ -98,6 +179,18 @@ class Wp_Dialyra {
 	 * @access   private
 	 */
 	private function load_dependencies() {
+
+		/**
+		 * Shared Dialyra API, auth, setup, and manager services.
+		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/api/class-dialyra-api-config.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/api/class-dialyra-api-response.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/api/class-dialyra-api-client.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/api/class-dialyra-api-endpoints.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/auth/class-dialyra-auth-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/business/class-dialyra-business-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/flow/class-dialyra-flow-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/utils.php';
 
 		/**
 		 * The class responsible for orchestrating the actions and filters of the
@@ -158,6 +251,7 @@ class Wp_Dialyra {
 		$this->loader->add_action( 'in_admin_header', $plugin_admin, 'remove_admin_notices', 1 );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
+		$this->loader->add_action( 'admin_post_wp_dialyra_stream_audio', $plugin_admin, 'stream_audio_asset' );
 
 	}
 
@@ -215,6 +309,36 @@ class Wp_Dialyra {
 	 */
 	public function get_version() {
 		return $this->version;
+	}
+
+	/**
+	 * Get the API endpoints service.
+	 *
+	 * @since     1.0.0
+	 * @return    Dialyra_API_Endpoints
+	 */
+	public function get_api_endpoints() {
+		return $this->api_endpoints;
+	}
+
+	/**
+	 * Get the business manager service.
+	 *
+	 * @since     1.0.0
+	 * @return    Dialyra_Business_Manager
+	 */
+	public function get_business_manager() {
+		return $this->business_manager;
+	}
+
+	/**
+	 * Get the flow manager service.
+	 *
+	 * @since     1.0.0
+	 * @return    Dialyra_Flow_Manager
+	 */
+	public function get_flow_manager() {
+		return $this->flow_manager;
 	}
 
 }

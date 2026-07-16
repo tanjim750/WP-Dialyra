@@ -24,6 +24,14 @@
 	box-sizing: border-box;
 }
 
+.wp-dialyra-admin [hidden] {
+	display: none !important;
+}
+
+.wp-dialyra-admin .wp-dialyra-is-hidden {
+	display: none !important;
+}
+
 .wp-dialyra-admin .notice,
 .wp-dialyra-admin .updated,
 .wp-dialyra-admin .error,
@@ -44,6 +52,7 @@
 .wp-dialyra-flow-builder,
 .wp-dialyra-flow-preview-page,
 .wp-dialyra-flows,
+.wp-dialyra-setup,
 .wp-dialyra-test-tools {
 	position: relative;
 	overflow: hidden;
@@ -193,6 +202,28 @@
 	transition: color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
+.wp-dialyra-setup-back {
+	display: inline-flex;
+	align-items: center;
+	min-height: 38px;
+	padding: 0 14px;
+	border: 1px solid rgba(23, 105, 255, 0.14);
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.68);
+	color: var(--dialyra-blue-dark);
+	font-size: 13px;
+	font-weight: 850;
+	text-decoration: none;
+	transition: color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.wp-dialyra-setup-back:hover,
+.wp-dialyra-setup-back:focus {
+	background: rgba(23, 105, 255, 0.08);
+	color: var(--dialyra-blue);
+	transform: translateY(-1px);
+}
+
 .wp-dialyra-nav-link:hover,
 .wp-dialyra-nav-link:focus {
 	color: var(--dialyra-blue-dark);
@@ -238,6 +269,17 @@
 	border-radius: 999px;
 	background: var(--dialyra-gold);
 	box-shadow: 0 0 0 5px rgba(247, 183, 49, 0.16);
+}
+
+.wp-dialyra-status--ready {
+	border-color: rgba(29, 185, 132, 0.34);
+	background: rgba(29, 185, 132, 0.13);
+	color: #117457;
+}
+
+.wp-dialyra-status--ready::before {
+	background: var(--dialyra-green);
+	box-shadow: 0 0 0 5px rgba(29, 185, 132, 0.16);
 }
 
 .wp-dialyra-button {
@@ -1391,9 +1433,70 @@
 	gap: 14px;
 }
 
+.wp-dialyra-business-grid--dialog {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	margin-bottom: 12px;
+}
+
+.wp-dialyra-business-toolbar {
+	display: flex;
+	align-items: end;
+	justify-content: flex-end;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
 .wp-dialyra-business-select {
 	min-width: 260px;
 	margin-top: 0;
+}
+
+.wp-dialyra-business-create-button {
+	min-height: 46px;
+	border-color: rgba(23, 105, 255, 0.24);
+	background:
+		linear-gradient(135deg, rgba(23, 105, 255, 0.12), rgba(33, 201, 151, 0.12)),
+		rgba(255, 255, 255, 0.88);
+	color: var(--dialyra-blue-dark);
+	box-shadow: 0 12px 24px rgba(23, 105, 255, 0.12);
+	white-space: nowrap;
+}
+
+.wp-dialyra-business-create-button:hover,
+.wp-dialyra-business-create-button:focus {
+	border-color: rgba(23, 105, 255, 0.38);
+	background: linear-gradient(135deg, var(--dialyra-blue), var(--dialyra-blue-dark));
+	color: #fff;
+	box-shadow: 0 16px 30px rgba(23, 105, 255, 0.24);
+}
+
+.wp-dialyra-business-create-button .dashicons {
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+	line-height: 1;
+}
+
+#wp-dialyra-create-business-dialog .wp-dialyra-business-submit-button {
+	gap: 8px;
+	border: 0;
+	background: linear-gradient(135deg, #1769ff, #0b48c7);
+	color: #fff;
+	box-shadow: 0 14px 26px rgba(23, 105, 255, 0.22);
+}
+
+#wp-dialyra-create-business-dialog .wp-dialyra-business-submit-button:hover,
+#wp-dialyra-create-business-dialog .wp-dialyra-business-submit-button:focus {
+	background: linear-gradient(135deg, #1769ff, #0b48c7);
+	color: #fff;
+	box-shadow: 0 14px 26px rgba(23, 105, 255, 0.22);
+}
+
+#wp-dialyra-create-business-dialog .wp-dialyra-business-submit-button .dashicons {
+	width: 16px;
+	height: 16px;
+	font-size: 16px;
+	line-height: 1;
 }
 
 .wp-dialyra-settings-row {
@@ -1438,6 +1541,19 @@
 .wp-dialyra-settings-row select,
 .wp-dialyra-status-map select {
 	padding-right: 32px;
+}
+
+.wp-dialyra-settings-row .wp-dialyra-status-multi-select {
+	min-height: 148px;
+	height: auto;
+	padding: 10px;
+	line-height: 1.4;
+}
+
+.wp-dialyra-status-multi-select option {
+	padding: 8px 10px;
+	border-radius: 10px;
+	font-weight: 750;
 }
 
 .wp-dialyra-settings-row input:not([type="file"]):focus,
@@ -1496,6 +1612,12 @@
 	gap: 10px;
 }
 
+.wp-dialyra-token-field input,
+.wp-dialyra-settings-row .wp-dialyra-token-field input[readonly] {
+	color: #334155;
+	-webkit-text-fill-color: #334155;
+}
+
 .wp-dialyra-token-field button {
 	min-height: 46px;
 	height: 46px;
@@ -1506,6 +1628,14 @@
 	color: #fff;
 	cursor: pointer;
 	font-weight: 850;
+}
+
+.wp-dialyra-settings-help {
+	margin: 2px 0 0;
+	color: var(--dialyra-muted);
+	font-size: 12px;
+	font-weight: 750;
+	line-height: 1.55;
 }
 
 .wp-dialyra-agents {
@@ -1611,6 +1741,32 @@
 	margin-bottom: 22px;
 }
 
+.wp-dialyra-agent-panel__head--actions {
+	align-items: flex-start;
+}
+
+.wp-dialyra-agent-panel__head--actions > div:not(.wp-dialyra-agent-create-actions) {
+	min-width: 0;
+	flex: 1 1 auto;
+}
+
+.wp-dialyra-agent-create-actions {
+	display: flex;
+	flex: 0 0 auto;
+	flex-wrap: wrap;
+	gap: 10px;
+	justify-content: flex-end;
+	margin-left: auto;
+}
+
+.wp-dialyra-agent-create-actions .wp-dialyra-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	border: 0;
+	cursor: pointer;
+}
+
 .wp-dialyra-agent-panel__head > span {
 	display: inline-flex;
 	width: 38px;
@@ -1651,6 +1807,64 @@
 	gap: 14px;
 }
 
+.wp-dialyra-agent-form__full {
+	grid-column: 1 / -1;
+}
+
+.wp-dialyra-agent-mode {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+}
+
+.wp-dialyra-agent-mode__option {
+	display: flex;
+	gap: 12px;
+	align-items: flex-start;
+	padding: 14px;
+	border: 1px solid rgba(23, 105, 255, 0.14);
+	border-radius: 18px;
+	background: rgba(255, 255, 255, 0.74);
+	cursor: pointer;
+}
+
+.wp-dialyra-agent-mode__option:has(input:checked) {
+	border-color: rgba(23, 105, 255, 0.42);
+	background: linear-gradient(135deg, rgba(23, 105, 255, 0.1), rgba(33, 201, 151, 0.08));
+	box-shadow: 0 14px 32px rgba(23, 105, 255, 0.12);
+}
+
+.wp-dialyra-agent-mode__option input {
+	margin-top: 3px;
+}
+
+.wp-dialyra-agent-mode__option strong,
+.wp-dialyra-agent-mode__option small {
+	display: block;
+}
+
+.wp-dialyra-agent-mode__option strong {
+	color: var(--dialyra-ink);
+	font-size: 14px;
+	font-weight: 850;
+}
+
+.wp-dialyra-agent-mode__option small,
+.wp-dialyra-settings-row small {
+	color: var(--dialyra-muted);
+	line-height: 1.5;
+}
+
+.wp-dialyra-agent-toggle-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+}
+
+.wp-dialyra-agent-toggle-grid .wp-dialyra-toggle-row {
+	margin: 0;
+}
+
 .wp-dialyra-agent-panel__footer {
 	display: flex;
 	justify-content: flex-end;
@@ -1677,10 +1891,10 @@
 
 .wp-dialyra-agent-directory [role="row"] {
 	display: grid;
-	grid-template-columns: 1.2fr 1.2fr 0.9fr 1fr 0.8fr 0.8fr;
+	grid-template-columns: 1.15fr 1.15fr 0.85fr 0.95fr 0.75fr 0.75fr minmax(250px, 0.9fr);
 	gap: 14px;
 	align-items: center;
-	min-width: 980px;
+	min-width: 1220px;
 	padding: 13px 14px;
 	border-radius: 16px;
 	background: rgba(255, 255, 255, 0.6);
@@ -1728,6 +1942,264 @@
 
 .wp-dialyra-agent-directory .wp-dialyra-result {
 	margin-right: 5px;
+}
+
+.wp-dialyra-agent-actions {
+	justify-content: flex-end;
+}
+
+.wp-dialyra-agent-actions .wp-dialyra-icon-button {
+	width: 34px;
+	height: 34px;
+	border-radius: 11px;
+}
+
+.wp-dialyra-agent-extension-stack,
+.wp-dialyra-agent-extension-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
+	min-width: 0;
+	white-space: normal;
+}
+
+.wp-dialyra-agent-extension-stack small {
+	flex: 0 0 100%;
+}
+
+.wp-dialyra-agent-extension-chips code {
+	display: inline-flex;
+	align-items: center;
+	min-height: 26px;
+}
+
+.wp-dialyra-agent-profile-card {
+	display: grid;
+	gap: 16px;
+	padding: 16px;
+	border: 1px solid rgba(16, 32, 47, 0.08);
+	border-radius: 24px;
+	background:
+		radial-gradient(circle at 0% 0%, rgba(23, 105, 255, 0.14), transparent 34%),
+		radial-gradient(circle at 100% 0%, rgba(33, 201, 151, 0.14), transparent 32%),
+		rgba(255, 255, 255, 0.7);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.wp-dialyra-agent-profile-card__hero {
+	display: flex;
+	gap: 14px;
+	align-items: center;
+	padding: 14px;
+	border-radius: 20px;
+	background: rgba(255, 255, 255, 0.74);
+}
+
+.wp-dialyra-agent-profile-card__avatar {
+	display: grid;
+	flex: 0 0 58px;
+	width: 58px;
+	height: 58px;
+	place-items: center;
+	border-radius: 20px;
+	background: linear-gradient(135deg, var(--dialyra-blue), var(--dialyra-mint));
+	color: #fff;
+	font-size: 24px;
+	font-weight: 950;
+	box-shadow: 0 16px 32px rgba(23, 105, 255, 0.22);
+}
+
+.wp-dialyra-agent-profile-card h4 {
+	margin: 0 0 4px;
+	color: var(--dialyra-ink);
+	font-size: 22px;
+	font-weight: 900;
+	letter-spacing: -0.03em;
+}
+
+.wp-dialyra-agent-profile-card p {
+	margin: 0;
+	color: var(--dialyra-muted);
+	font-weight: 750;
+}
+
+.wp-dialyra-agent-profile-card__badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 7px;
+	margin-top: 10px;
+}
+
+.wp-dialyra-agent-profile-card__details div {
+	padding-inline: 4px;
+}
+
+.wp-dialyra-agent-extension-section {
+	display: grid;
+	gap: 12px;
+	padding: 14px;
+	border: 1px solid rgba(23, 105, 255, 0.12);
+	border-radius: 20px;
+	background:
+		linear-gradient(135deg, rgba(23, 105, 255, 0.07), rgba(33, 201, 151, 0.07)),
+		rgba(255, 255, 255, 0.62);
+}
+
+.wp-dialyra-agent-extension-section__head {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.wp-dialyra-agent-extension-section__head > div {
+	display: flex;
+	gap: 10px;
+	align-items: center;
+	min-width: 0;
+}
+
+.wp-dialyra-agent-extension-section__head .dashicons,
+.wp-dialyra-agent-extension-empty > .dashicons,
+.wp-dialyra-agent-extension-card > .dashicons {
+	display: grid;
+	flex: 0 0 auto;
+	width: 38px;
+	height: 38px;
+	place-items: center;
+	border-radius: 14px;
+	background: rgba(23, 105, 255, 0.1);
+	color: var(--dialyra-blue-dark);
+	font-size: 18px;
+	line-height: 1;
+}
+
+.wp-dialyra-agent-extension-section__head h5 {
+	margin: 0 0 3px;
+	color: var(--dialyra-ink);
+	font-size: 15px;
+	font-weight: 900;
+	letter-spacing: -0.02em;
+}
+
+.wp-dialyra-agent-extension-section__head p {
+	margin: 0;
+	color: var(--dialyra-muted);
+	font-size: 12px;
+	font-weight: 750;
+}
+
+.wp-dialyra-agent-extension-section__hint {
+	margin: 0;
+	padding: 10px 12px;
+	border: 1px solid rgba(23, 105, 255, 0.1);
+	border-radius: 14px;
+	background: rgba(255, 255, 255, 0.62);
+	color: var(--dialyra-muted);
+	font-size: 12px;
+	font-weight: 750;
+	line-height: 1.55;
+}
+
+.wp-dialyra-agent-extension-section__hint code,
+.wp-dialyra-agent-call-requirement code {
+	padding: 3px 7px;
+	border-radius: 8px;
+	background: rgba(23, 105, 255, 0.1);
+	color: var(--dialyra-blue-dark);
+	font-weight: 900;
+}
+
+.wp-dialyra-agent-extension-section__head > em {
+	flex: 0 0 auto;
+	padding: 6px 10px;
+	border-radius: 999px;
+	background: rgba(33, 201, 151, 0.14);
+	color: #08785a;
+	font-size: 11px;
+	font-style: normal;
+	font-weight: 900;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+
+.wp-dialyra-agent-extension-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+	gap: 10px;
+}
+
+.wp-dialyra-agent-extension-card {
+	display: grid;
+	grid-template-columns: 38px minmax(0, 1fr) auto;
+	gap: 10px;
+	align-items: center;
+	padding: 12px;
+	border: 1px solid rgba(16, 32, 47, 0.08);
+	border-radius: 16px;
+	background: rgba(255, 255, 255, 0.76);
+	text-align: left;
+	box-shadow: 0 10px 24px rgba(16, 32, 47, 0.05);
+}
+
+.wp-dialyra-agent-extension-card strong,
+.wp-dialyra-agent-extension-card small {
+	display: block;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.wp-dialyra-agent-extension-card strong {
+	color: var(--dialyra-ink);
+	font-size: 16px;
+	font-weight: 950;
+}
+
+.wp-dialyra-agent-extension-card small {
+	margin-top: 3px;
+	color: var(--dialyra-muted);
+	font-size: 12px;
+	font-weight: 750;
+}
+
+.wp-dialyra-agent-extension-card small span {
+	color: var(--dialyra-ink);
+	font-weight: 900;
+}
+
+.wp-dialyra-agent-extension-card em {
+	padding: 4px 8px;
+	border-radius: 999px;
+	background: rgba(33, 201, 151, 0.14);
+	color: #08785a;
+	font-size: 10px;
+	font-style: normal;
+	font-weight: 900;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+
+.wp-dialyra-agent-extension-empty {
+	display: grid;
+	justify-items: center;
+	gap: 6px;
+	padding: 22px 14px;
+	border: 1px dashed rgba(23, 105, 255, 0.22);
+	border-radius: 16px;
+	background: rgba(255, 255, 255, 0.58);
+	text-align: center;
+}
+
+.wp-dialyra-agent-extension-empty strong {
+	color: var(--dialyra-ink);
+	font-weight: 900;
+}
+
+.wp-dialyra-agent-extension-empty small {
+	color: var(--dialyra-muted);
+	font-weight: 750;
 }
 
 .wp-dialyra-agent-identity {
@@ -2039,6 +2511,30 @@
 	line-height: 1.55;
 }
 
+.wp-dialyra-audio-inline-form {
+	display: grid;
+	gap: 8px;
+	margin: 0;
+}
+
+.wp-dialyra-audio-inline-fields {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(150px, 0.55fr);
+	gap: 10px;
+}
+
+.wp-dialyra-audio-inline-fields .wp-dialyra-settings-row {
+	gap: 5px;
+}
+
+.wp-dialyra-audio-inline-fields label {
+	font-size: 11px;
+}
+
+.wp-dialyra-audio-player {
+	display: none;
+}
+
 .wp-dialyra-audio-wave {
 	display: flex;
 	align-items: center;
@@ -2053,6 +2549,7 @@
 	width: 6px;
 	border-radius: 999px;
 	background: linear-gradient(180deg, var(--dialyra-blue), var(--dialyra-mint));
+	transform-origin: center bottom;
 }
 
 .wp-dialyra-audio-wave span:nth-child(1),
@@ -2070,11 +2567,58 @@
 	height: 46px;
 }
 
+.wp-dialyra-audio-row--playing .wp-dialyra-audio-wave {
+	background:
+		radial-gradient(circle at 50% 50%, rgba(33, 201, 151, 0.22), transparent 64%),
+		linear-gradient(135deg, rgba(23, 105, 255, 0.16), rgba(33, 201, 151, 0.18));
+	box-shadow: inset 0 0 0 1px rgba(33, 201, 151, 0.18), 0 14px 28px rgba(33, 201, 151, 0.12);
+}
+
+.wp-dialyra-audio-row--playing .wp-dialyra-audio-wave span {
+	animation: wp-dialyra-wave-playing 720ms ease-in-out infinite alternate;
+}
+
+.wp-dialyra-audio-row--playing .wp-dialyra-audio-wave span:nth-child(2) {
+	animation-delay: 90ms;
+}
+
+.wp-dialyra-audio-row--playing .wp-dialyra-audio-wave span:nth-child(3) {
+	animation-delay: 180ms;
+}
+
+.wp-dialyra-audio-row--playing .wp-dialyra-audio-wave span:nth-child(4) {
+	animation-delay: 270ms;
+}
+
+.wp-dialyra-audio-row--playing .wp-dialyra-audio-wave span:nth-child(5) {
+	animation-delay: 360ms;
+}
+
+.wp-dialyra-audio-row--playing .wp-dialyra-audio-wave span:nth-child(6) {
+	animation-delay: 450ms;
+}
+
+@keyframes wp-dialyra-wave-playing {
+	from {
+		transform: scaleY(0.45);
+		opacity: 0.62;
+	}
+
+	to {
+		transform: scaleY(1.14);
+		opacity: 1;
+	}
+}
+
 .wp-dialyra-audio-list__actions {
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: flex-end;
 	gap: 8px;
+}
+
+.wp-dialyra-audio-list__actions form {
+	margin: 0;
 }
 
 .wp-dialyra-audio-action {
@@ -2109,6 +2653,12 @@
 .wp-dialyra-audio-action--stream {
 	background: rgba(33, 201, 151, 0.12);
 	color: #087859;
+}
+
+.wp-dialyra-audio-action--playing {
+	background: linear-gradient(135deg, var(--dialyra-mint), #16a67e);
+	color: #fff;
+	box-shadow: 0 12px 22px rgba(33, 201, 151, 0.22);
 }
 
 .wp-dialyra-audio-action--edit {
@@ -2833,6 +3383,300 @@
 	text-align: right;
 }
 
+.wp-dialyra-department-table-wrap {
+	overflow-x: auto;
+	border: 1px solid rgba(16, 32, 47, 0.08);
+	border-radius: 22px;
+	background:
+		linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(244, 249, 255, 0.72)),
+		rgba(255, 255, 255, 0.82);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.wp-dialyra-department-table {
+	width: 100%;
+	min-width: 1120px;
+	border-collapse: collapse;
+}
+
+.wp-dialyra-department-table th,
+.wp-dialyra-department-table td {
+	padding: 16px 14px;
+	border-bottom: 1px solid rgba(16, 32, 47, 0.08);
+	text-align: left;
+	vertical-align: middle;
+}
+
+.wp-dialyra-department-table th {
+	background: rgba(16, 32, 47, 0.04);
+	color: var(--dialyra-muted);
+	font-size: 11px;
+	font-weight: 900;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	white-space: nowrap;
+}
+
+.wp-dialyra-department-table tr:last-child td {
+	border-bottom: 0;
+}
+
+.wp-dialyra-department-table td {
+	color: var(--dialyra-ink);
+	font-weight: 750;
+}
+
+.wp-dialyra-department-table td strong,
+.wp-dialyra-department-table td small {
+	display: block;
+}
+
+.wp-dialyra-department-table td strong {
+	margin-bottom: 4px;
+	font-size: 15px;
+	font-weight: 900;
+	letter-spacing: -0.02em;
+}
+
+.wp-dialyra-department-table td small {
+	max-width: 280px;
+	color: var(--dialyra-muted);
+	font-size: 12px;
+	font-weight: 750;
+	line-height: 1.45;
+}
+
+.wp-dialyra-department-actions {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 8px;
+}
+
+.wp-dialyra-department-actions .wp-dialyra-icon-button,
+.wp-dialyra-dialog__close {
+	display: inline-flex;
+	width: 38px;
+	height: 38px;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid rgba(23, 105, 255, 0.14);
+	border-radius: 12px;
+	background: rgba(23, 105, 255, 0.08);
+	color: var(--dialyra-blue-dark);
+	cursor: pointer;
+	transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.wp-dialyra-department-actions .wp-dialyra-icon-button:hover,
+.wp-dialyra-dialog__close:hover,
+.wp-dialyra-department-actions .wp-dialyra-icon-button:focus,
+.wp-dialyra-dialog__close:focus {
+	transform: translateY(-1px);
+	background: rgba(23, 105, 255, 0.14);
+	box-shadow: 0 12px 24px rgba(23, 105, 255, 0.14);
+	outline: none;
+}
+
+.wp-dialyra-department-actions .wp-dialyra-icon-button--danger {
+	border-color: rgba(234, 48, 91, 0.18);
+	background: rgba(234, 48, 91, 0.08);
+	color: #b4234b;
+}
+
+.wp-dialyra-dialog[hidden] {
+	display: none;
+}
+
+.wp-dialyra-dialog {
+	--wp-dialyra-dialog-top-offset: var(--wp-admin--admin-bar--height, 32px);
+	--dialyra-ink: #10202f;
+	--dialyra-muted: #66758a;
+	--dialyra-line: rgba(16, 32, 47, 0.12);
+	--dialyra-blue: #1769ff;
+	--dialyra-blue-dark: #0b48c7;
+	--dialyra-mint: #21c997;
+	--dialyra-gold: #f7b731;
+	position: fixed;
+	inset: var(--wp-dialyra-dialog-top-offset) 0 0;
+	z-index: 100100;
+	display: grid;
+	place-items: center;
+	box-sizing: border-box;
+	width: 100vw;
+	height: calc(100dvh - var(--wp-dialyra-dialog-top-offset));
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 24px;
+}
+
+.wp-dialyra-dialog__backdrop {
+	position: absolute;
+	inset: 0;
+	background:
+		radial-gradient(circle at 50% 20%, rgba(23, 105, 255, 0.18), transparent 42%),
+		rgba(6, 14, 24, 0.54);
+	backdrop-filter: blur(10px);
+}
+
+.wp-dialyra-dialog__panel {
+	position: relative;
+	z-index: 1;
+	box-sizing: border-box;
+	width: min(720px, calc(100vw - 34px));
+	max-height: min(calc(100dvh - var(--wp-dialyra-dialog-top-offset) - 48px), 920px);
+	overflow-y: auto;
+	padding: 24px;
+	border: 1px solid rgba(255, 255, 255, 0.72);
+	border-radius: 28px;
+	background:
+		radial-gradient(circle at 100% 0%, rgba(33, 201, 151, 0.16), transparent 34%),
+		linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(244, 248, 255, 0.94));
+	box-shadow: 0 34px 90px rgba(6, 14, 24, 0.32);
+	animation: wp-dialyra-dialog-enter 180ms ease-out;
+}
+
+.wp-dialyra-dialog--wide .wp-dialyra-dialog__panel {
+	width: min(1040px, calc(100vw - 34px));
+}
+
+.wp-dialyra-dialog__panel--danger {
+	background:
+		radial-gradient(circle at 100% 0%, rgba(234, 48, 91, 0.16), transparent 34%),
+		linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(255, 246, 249, 0.94));
+}
+
+.wp-dialyra-dialog__head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 22px;
+}
+
+.wp-dialyra-dialog__head h3 {
+	margin: 0;
+	color: var(--dialyra-ink);
+	font-size: clamp(24px, 3vw, 34px);
+	font-weight: 900;
+	letter-spacing: -0.05em;
+}
+
+.wp-dialyra-dialog__close {
+	flex: 0 0 38px;
+	border-color: rgba(16, 32, 47, 0.12);
+	background: rgba(255, 255, 255, 0.8);
+	color: var(--dialyra-ink);
+}
+
+.wp-dialyra-dialog__warning {
+	margin: 0 0 18px;
+	padding: 14px 16px;
+	border: 1px solid rgba(234, 48, 91, 0.18);
+	border-radius: 16px;
+	background: rgba(234, 48, 91, 0.08);
+	color: #9f1f43;
+	font-weight: 800;
+	line-height: 1.6;
+}
+
+.wp-dialyra-dialog-lock {
+	overflow: hidden;
+}
+
+@keyframes wp-dialyra-dialog-enter {
+	from {
+		opacity: 0;
+		transform: translateY(18px) scale(0.98);
+	}
+
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+
+@media (max-width: 900px) {
+	.wp-dialyra-dialog {
+		--wp-dialyra-dialog-top-offset: var(--wp-admin--admin-bar--height, 46px);
+		padding: 14px;
+	}
+
+	.wp-dialyra-dialog__panel,
+	.wp-dialyra-dialog--wide .wp-dialyra-dialog__panel {
+		width: min(100%, calc(100vw - 20px));
+		max-height: calc(100dvh - var(--wp-dialyra-dialog-top-offset) - 28px);
+		border-radius: 22px;
+	}
+
+	.wp-dialyra-department-table-wrap {
+		overflow: visible;
+		border: 0;
+		background: transparent;
+		box-shadow: none;
+	}
+
+	.wp-dialyra-department-table,
+	.wp-dialyra-department-table thead,
+	.wp-dialyra-department-table tbody,
+	.wp-dialyra-department-table tr,
+	.wp-dialyra-department-table th,
+	.wp-dialyra-department-table td {
+		display: block;
+		width: 100%;
+		min-width: 0;
+	}
+
+	.wp-dialyra-department-table thead {
+		display: none;
+	}
+
+	.wp-dialyra-department-table tr {
+		margin-bottom: 14px;
+		padding: 16px;
+		border: 1px solid rgba(16, 32, 47, 0.08);
+		border-radius: 20px;
+		background: rgba(255, 255, 255, 0.76);
+		box-shadow: 0 16px 34px rgba(16, 32, 47, 0.08);
+	}
+
+	.wp-dialyra-department-table td {
+		display: grid;
+		grid-template-columns: 120px minmax(0, 1fr);
+		gap: 12px;
+		padding: 10px 0;
+		border-bottom: 1px solid rgba(16, 32, 47, 0.07);
+	}
+
+	.wp-dialyra-department-table td:last-child {
+		border-bottom: 0;
+	}
+
+	.wp-dialyra-department-table td::before {
+		content: attr(data-label);
+		color: var(--dialyra-muted);
+		font-size: 11px;
+		font-weight: 900;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+	}
+
+	.wp-dialyra-department-actions {
+		flex-wrap: wrap;
+	}
+
+	.wp-dialyra-dialog {
+		padding: 12px;
+	}
+
+	.wp-dialyra-dialog__panel {
+		width: min(100%, calc(100vw - 24px));
+		max-height: 88vh;
+		padding: 18px;
+		border-radius: 22px;
+	}
+}
+
 .wp-dialyra-agent-mapping {
 	display: grid;
 	gap: 6px;
@@ -2863,6 +3707,39 @@
 	font-weight: 750;
 }
 
+.wp-dialyra-department-inline-form {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto auto;
+	align-items: center;
+	gap: 10px;
+	padding-top: 10px;
+	border-top: 1px solid rgba(16, 32, 47, 0.08);
+}
+
+.wp-dialyra-department-inline-form:first-of-type {
+	padding-top: 0;
+	border-top: 0;
+}
+
+.wp-dialyra-department-inline-form .wp-dialyra-icon-button {
+	display: inline-flex;
+	width: 38px;
+	height: 38px;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid rgba(234, 48, 91, 0.18);
+	border-radius: 12px;
+	background: rgba(234, 48, 91, 0.08);
+	color: #b4234b;
+	cursor: pointer;
+}
+
+.wp-dialyra-department-time-pair {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+}
+
 .wp-dialyra-weekly-hours {
 	display: grid;
 	grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -2883,6 +3760,20 @@
 	color: var(--dialyra-ink);
 	font-size: 13px;
 	font-weight: 900;
+}
+
+.wp-dialyra-weekly-hours label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0;
+}
+
+.wp-dialyra-weekly-hours label input {
+	width: auto;
+	min-height: auto;
+	height: auto;
+	margin: 0;
 }
 
 .wp-dialyra-weekly-hours input {
@@ -3004,7 +3895,7 @@
 .wp-dialyra-status-map {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 12px;
+	gap: 14px;
 }
 
 .wp-dialyra-status-map div {
@@ -3012,20 +3903,180 @@
 	grid-template-columns: minmax(120px, 1fr) auto minmax(160px, 1.2fr);
 	gap: 12px;
 	align-items: center;
-	padding: 14px;
-	border: 1px solid rgba(16, 32, 47, 0.08);
-	border-radius: 16px;
-	background: rgba(255, 255, 255, 0.58);
+	padding: 16px;
+	border: 1px solid rgba(23, 105, 255, 0.1);
+	border-radius: 20px;
+	background:
+		linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 251, 255, 0.76)),
+		rgba(255, 255, 255, 0.72);
+	box-shadow: 0 14px 32px rgba(16, 32, 47, 0.06);
 }
 
 .wp-dialyra-status-map span {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
 	color: var(--dialyra-ink);
 	font-weight: 850;
+}
+
+.wp-dialyra-status-map span .dashicons {
+	display: inline-flex;
+	width: 28px;
+	height: 28px;
+	align-items: center;
+	justify-content: center;
+	border-radius: 999px;
+	background: rgba(23, 105, 255, 0.1);
+	color: var(--dialyra-blue-dark);
+	font-size: 15px;
+	line-height: 1;
 }
 
 .wp-dialyra-status-map strong {
 	color: var(--dialyra-blue-dark);
 	font-size: 18px;
+}
+
+.wp-dialyra-skip-status-card {
+	display: grid;
+	gap: 16px;
+	margin-top: 18px;
+	padding: 20px;
+	border: 1px solid rgba(33, 201, 151, 0.18);
+	border-radius: 22px;
+	background:
+		radial-gradient(circle at 100% 0%, rgba(33, 201, 151, 0.12), transparent 34%),
+		rgba(255, 255, 255, 0.7);
+	box-shadow: 0 18px 42px rgba(16, 32, 47, 0.06);
+}
+
+.wp-dialyra-skip-status-card__head {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+}
+
+.wp-dialyra-skip-status-card__head > .dashicons {
+	display: inline-flex;
+	width: 38px;
+	height: 38px;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	border-radius: 14px;
+	background: linear-gradient(135deg, rgba(33, 201, 151, 0.2), rgba(23, 105, 255, 0.12));
+	color: var(--dialyra-blue-dark);
+	font-size: 18px;
+	line-height: 1;
+}
+
+.wp-dialyra-skip-status-card label {
+	margin: 0;
+	color: var(--dialyra-ink);
+	font-size: 15px;
+	font-weight: 900;
+	letter-spacing: 0.02em;
+}
+
+.wp-dialyra-skip-status-card__head small {
+	display: block;
+	margin-top: 4px;
+	color: var(--dialyra-muted);
+	font-size: 12px;
+	font-weight: 750;
+	line-height: 1.5;
+}
+
+.wp-dialyra-skip-status-options {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 10px;
+}
+
+.wp-dialyra-skip-status-option {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 48px;
+	padding: 11px 12px;
+	border: 1px solid rgba(16, 32, 47, 0.1);
+	border-radius: 16px;
+	background: rgba(255, 255, 255, 0.78);
+	box-shadow: 0 10px 22px rgba(16, 32, 47, 0.04);
+	cursor: pointer;
+	transition:
+		border-color 0.2s ease,
+		background 0.2s ease,
+		box-shadow 0.2s ease,
+		transform 0.2s ease;
+}
+
+.wp-dialyra-skip-status-option:hover {
+	border-color: rgba(23, 105, 255, 0.24);
+	box-shadow: 0 14px 28px rgba(23, 105, 255, 0.08);
+	transform: translateY(-1px);
+}
+
+.wp-dialyra-skip-status-option input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
+.wp-dialyra-skip-status-option__check {
+	display: inline-flex;
+	width: 26px;
+	height: 26px;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	border: 1px solid rgba(102, 117, 138, 0.24);
+	border-radius: 999px;
+	background: rgba(248, 251, 255, 0.92);
+	color: transparent;
+	transition:
+		border-color 0.2s ease,
+		background 0.2s ease,
+		color 0.2s ease,
+		box-shadow 0.2s ease;
+}
+
+.wp-dialyra-skip-status-option__check .dashicons {
+	width: 14px;
+	height: 14px;
+	font-size: 14px;
+	line-height: 1;
+}
+
+.wp-dialyra-skip-status-option__text {
+	color: var(--dialyra-ink);
+	font-size: 13px;
+	font-weight: 850;
+	line-height: 1.25;
+}
+
+.wp-dialyra-skip-status-option input:focus-visible + .wp-dialyra-skip-status-option__check {
+	box-shadow: 0 0 0 4px rgba(23, 105, 255, 0.14);
+}
+
+.wp-dialyra-skip-status-option:has(input:checked) {
+	border-color: rgba(33, 201, 151, 0.34);
+	background:
+		linear-gradient(135deg, rgba(33, 201, 151, 0.14), rgba(23, 105, 255, 0.08)),
+		rgba(255, 255, 255, 0.9);
+}
+
+.wp-dialyra-skip-status-option input:checked + .wp-dialyra-skip-status-option__check {
+	border-color: rgba(33, 201, 151, 0.42);
+	background: var(--dialyra-mint);
+	color: #fff;
 }
 
 .wp-dialyra-result--muted {
@@ -4727,6 +5778,38 @@
 	background: rgba(255, 255, 255, 0.64);
 }
 
+.wp-dialyra-footer-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+}
+
+.wp-dialyra-footer-status::before {
+	width: 7px;
+	height: 7px;
+	content: "";
+	border-radius: 999px;
+	background: var(--dialyra-gold);
+	box-shadow: 0 0 0 4px rgba(247, 183, 49, 0.14);
+}
+
+.wp-dialyra-footer-status--ready {
+	border-color: rgba(29, 185, 132, 0.26) !important;
+	background: rgba(29, 185, 132, 0.1) !important;
+	color: #117457;
+}
+
+.wp-dialyra-footer-status--ready::before {
+	background: var(--dialyra-green);
+	box-shadow: 0 0 0 4px rgba(29, 185, 132, 0.14);
+}
+
+.wp-dialyra-footer-status--warning {
+	border-color: rgba(247, 183, 49, 0.28) !important;
+	background: rgba(247, 183, 49, 0.1) !important;
+	color: #91640a;
+}
+
 @media screen and (max-width: 1280px) {
 	.wp-dialyra-flow-preview-page__grid,
 	.wp-dialyra-flow-table__row,
@@ -4925,6 +6008,8 @@
 	.wp-dialyra-agent-strip,
 	.wp-dialyra-agents__grid,
 	.wp-dialyra-agent-form__grid,
+	.wp-dialyra-agent-mode,
+	.wp-dialyra-agent-toggle-grid,
 	.wp-dialyra-audio__grid,
 	.wp-dialyra-call-filters,
 	.wp-dialyra-queue-strip,
@@ -5099,5 +6184,735 @@
 	.wp-dialyra-header__actions,
 	.wp-dialyra-footer__meta {
 		justify-content: flex-start;
+	}
+}
+
+/* Setup page */
+.wp-dialyra-setup {
+	padding: 28px;
+	border-radius: 30px;
+}
+
+.wp-dialyra-setup__hero,
+.wp-dialyra-setup-card__head,
+.wp-dialyra-setup-account,
+.wp-dialyra-token-preview,
+.wp-dialyra-create-business__head,
+.wp-dialyra-advanced-card__head,
+.wp-dialyra-setup-footer {
+	display: flex;
+	align-items: center;
+}
+
+.wp-dialyra-setup__hero {
+	position: relative;
+	z-index: 1;
+	justify-content: space-between;
+	gap: 24px;
+	margin-bottom: 22px;
+}
+
+.wp-dialyra-setup__hero h2 {
+	max-width: 760px;
+	margin: 0 0 10px;
+	font-size: clamp(28px, 3vw, 44px);
+	font-weight: 900;
+	line-height: 1.04;
+	letter-spacing: -0.04em;
+}
+
+.wp-dialyra-setup__hero p:last-child {
+	max-width: 720px;
+	margin: 0;
+	color: var(--dialyra-muted);
+	font-size: 15px;
+	line-height: 1.7;
+}
+
+.wp-dialyra-setup-account,
+.wp-dialyra-token-preview,
+.wp-dialyra-empty-card,
+.wp-dialyra-business-card,
+.wp-dialyra-flow-mini-list article {
+	border: 1px solid rgba(16, 32, 47, 0.1);
+	background: rgba(255, 255, 255, 0.78);
+	box-shadow: 0 14px 36px rgba(16, 32, 47, 0.08);
+}
+
+.wp-dialyra-setup-account {
+	flex: 0 0 auto;
+	gap: 12px;
+	min-width: 260px;
+	padding: 14px;
+	border-radius: 22px;
+}
+
+.wp-dialyra-setup-account .dashicons,
+.wp-dialyra-token-preview .dashicons,
+.wp-dialyra-setup-subsection .dashicons,
+.wp-dialyra-create-business__head .dashicons,
+.wp-dialyra-empty-card .dashicons,
+.wp-dialyra-advanced-card__head .dashicons {
+	display: grid;
+	width: 42px;
+	height: 42px;
+	place-items: center;
+	border-radius: 16px;
+	background: linear-gradient(135deg, rgba(23, 105, 255, 0.14), rgba(33, 201, 151, 0.16));
+	color: var(--dialyra-blue-dark);
+	font-size: 21px;
+	line-height: 1;
+}
+
+.wp-dialyra-setup-account strong,
+.wp-dialyra-token-preview strong,
+.wp-dialyra-empty-card strong,
+.wp-dialyra-flow-mini-list strong {
+	display: block;
+	color: var(--dialyra-ink);
+	font-weight: 900;
+}
+
+.wp-dialyra-setup-account small,
+.wp-dialyra-token-preview small,
+.wp-dialyra-empty-card p,
+.wp-dialyra-flow-mini-list small,
+.wp-dialyra-business-card small,
+.wp-dialyra-settings-row small,
+.wp-dialyra-advanced-card__head small,
+.wp-dialyra-create-business__head p {
+	color: var(--dialyra-muted);
+}
+
+.wp-dialyra-setup-steps {
+	position: relative;
+	z-index: 1;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	margin-bottom: 22px;
+	padding: 8px;
+	border: 1px solid rgba(16, 32, 47, 0.08);
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.62);
+}
+
+.wp-dialyra-setup-steps__links {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-left: auto;
+}
+
+.wp-dialyra-setup-step {
+	display: inline-flex;
+	align-items: center;
+	min-height: 36px;
+	padding: 0 16px;
+	border-radius: 999px;
+	color: var(--dialyra-muted);
+	font-size: 13px;
+	font-weight: 850;
+	text-decoration: none;
+	transition: color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.wp-dialyra-setup-step:hover,
+.wp-dialyra-setup-step:focus {
+	color: var(--dialyra-blue-dark);
+	background: rgba(23, 105, 255, 0.07);
+	transform: translateY(-1px);
+}
+
+.wp-dialyra-setup-step--active {
+	background: linear-gradient(135deg, var(--dialyra-blue), var(--dialyra-blue-dark));
+	color: #fff;
+	box-shadow: 0 12px 24px rgba(23, 105, 255, 0.2);
+}
+
+.wp-dialyra-setup-step--active:hover,
+.wp-dialyra-setup-step--active:focus {
+	color: #fff;
+	background: linear-gradient(135deg, var(--dialyra-blue), var(--dialyra-blue-dark));
+}
+
+.wp-dialyra-setup__grid {
+	position: relative;
+	z-index: 1;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(340px, 0.7fr);
+	gap: 18px;
+	margin: 0;
+}
+
+.wp-dialyra-notice,
+.wp-dialyra-setup-card--wide,
+.wp-dialyra-setup-advanced,
+.wp-dialyra-setup-footer {
+	grid-column: 1 / -1;
+}
+
+.wp-dialyra-notice {
+	padding: 14px 16px;
+	border-radius: 18px;
+	font-weight: 750;
+}
+
+.wp-dialyra-notice p {
+	margin: 0;
+}
+
+.wp-dialyra-fuse-warning {
+	grid-column: 1 / -1;
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	padding: 14px 16px;
+	border: 1px solid rgba(16, 32, 47, 0.08);
+	border-radius: 18px;
+	background:
+		linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.58)),
+		rgba(255, 255, 255, 0.72);
+	box-shadow: 0 14px 34px rgba(16, 32, 47, 0.07);
+	font-weight: 850;
+}
+
+.wp-dialyra-fuse-warning .dashicons {
+	display: grid;
+	flex: 0 0 auto;
+	width: 32px;
+	height: 32px;
+	place-items: center;
+	border-radius: 12px;
+	font-size: 18px;
+	line-height: 1;
+}
+
+.wp-dialyra-fuse-warning p {
+	margin: 0;
+}
+
+.wp-dialyra-fuse-warning--error {
+	border-color: rgba(225, 66, 83, 0.18);
+	color: #9f2332;
+}
+
+.wp-dialyra-fuse-warning--error .dashicons {
+	background: rgba(225, 66, 83, 0.12);
+}
+
+.wp-dialyra-fuse-warning--warning {
+	border-color: rgba(247, 183, 49, 0.24);
+	color: #87610d;
+}
+
+.wp-dialyra-fuse-warning--warning .dashicons {
+	background: rgba(247, 183, 49, 0.14);
+}
+
+.wp-dialyra-fuse-warning--success {
+	border-color: rgba(33, 201, 151, 0.2);
+	color: #08785a;
+}
+
+.wp-dialyra-fuse-warning--success .dashicons {
+	background: rgba(33, 201, 151, 0.14);
+}
+
+.wp-dialyra-notice--error {
+	border: 1px solid rgba(225, 66, 83, 0.22);
+	background: rgba(225, 66, 83, 0.08);
+	color: #9f2332;
+}
+
+.wp-dialyra-notice--success {
+	border: 1px solid rgba(33, 201, 151, 0.22);
+	background: rgba(33, 201, 151, 0.1);
+	color: #08785a;
+}
+
+.wp-dialyra-setup-card,
+.wp-dialyra-setup-advanced,
+.wp-dialyra-advanced-card {
+	border: 1px solid rgba(16, 32, 47, 0.1);
+	border-radius: 26px;
+	background: rgba(255, 255, 255, 0.82);
+	box-shadow: 0 18px 48px rgba(16, 32, 47, 0.08);
+}
+
+.wp-dialyra-setup-card {
+	min-width: 0;
+	padding: 20px;
+}
+
+.wp-dialyra-setup-card__head {
+	align-items: flex-start;
+	gap: 14px;
+	margin-bottom: 18px;
+}
+
+.wp-dialyra-setup-card__title {
+	display: flex;
+	gap: 14px;
+	align-items: flex-start;
+}
+
+.wp-dialyra-setup-card__head > span,
+.wp-dialyra-setup-card__title > span {
+	display: grid;
+	flex: 0 0 auto;
+	width: 42px;
+	height: 42px;
+	place-items: center;
+	border-radius: 16px;
+	background: rgba(23, 105, 255, 0.1);
+	color: var(--dialyra-blue-dark);
+	font-size: 13px;
+	font-weight: 950;
+}
+
+.wp-dialyra-setup-card h3,
+.wp-dialyra-setup-subsection h4,
+.wp-dialyra-create-business h4 {
+	margin: 0 0 6px;
+	font-size: 20px;
+	font-weight: 900;
+	letter-spacing: -0.03em;
+}
+
+.wp-dialyra-setup-card__head p:last-child,
+.wp-dialyra-setup-subsection p,
+.wp-dialyra-create-business__head p {
+	margin: 0;
+	font-size: 14px;
+	line-height: 1.6;
+}
+
+.wp-dialyra-setup-subsection {
+	display: flex;
+	gap: 12px;
+	align-items: flex-start;
+	padding: 14px;
+	border: 1px solid rgba(16, 32, 47, 0.08);
+	border-radius: 20px;
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.52));
+}
+
+.wp-dialyra-setup-subsection h4 {
+	font-size: 16px;
+}
+
+.wp-dialyra-business-choice {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 18px;
+	align-items: start;
+}
+
+.wp-dialyra-business-choice__list,
+.wp-dialyra-create-business,
+.wp-dialyra-setup-fields,
+.wp-dialyra-advanced-fields,
+.wp-dialyra-flow-mini-list {
+	display: grid;
+	gap: 12px;
+}
+
+.wp-dialyra-create-business {
+	padding: 16px;
+	border: 1px dashed rgba(23, 105, 255, 0.24);
+	border-radius: 22px;
+	background: linear-gradient(135deg, rgba(23, 105, 255, 0.06), rgba(33, 201, 151, 0.06));
+}
+
+.wp-dialyra-create-business__details {
+	display: grid;
+	gap: 12px;
+}
+
+.wp-dialyra-create-business__details .wp-dialyra-setup-fields {
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wp-dialyra-create-business__actions {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.wp-dialyra-create-business__head,
+.wp-dialyra-token-preview,
+.wp-dialyra-empty-card {
+	gap: 12px;
+}
+
+.wp-dialyra-settings-row {
+	display: grid;
+	gap: 7px;
+}
+
+.wp-dialyra-settings-row label,
+.wp-dialyra-setup-label {
+	color: var(--dialyra-ink);
+	font-size: 12px;
+	font-weight: 900;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.wp-dialyra-settings-row input,
+.wp-dialyra-settings-row select {
+	width: 100%;
+	max-width: none;
+	min-height: 42px;
+	border: 1px solid rgba(16, 32, 47, 0.14);
+	border-radius: 14px;
+	background-color: rgba(255, 255, 255, 0.92);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84);
+	color: var(--dialyra-ink);
+	font-weight: 700;
+}
+
+.wp-dialyra-business-cards {
+	display: grid;
+	gap: 10px;
+	max-height: 290px;
+	overflow: auto;
+	padding-right: 4px;
+}
+
+.wp-dialyra-business-card {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	gap: 12px;
+	align-items: center;
+	padding: 14px;
+	border-radius: 18px;
+	cursor: pointer;
+	transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.wp-dialyra-business-card:hover,
+.wp-dialyra-business-card:has(input:checked) {
+	border-color: rgba(23, 105, 255, 0.34);
+	box-shadow: 0 18px 40px rgba(23, 105, 255, 0.12);
+	transform: translateY(-1px);
+}
+
+.wp-dialyra-business-card input {
+	margin: 0;
+}
+
+.wp-dialyra-business-card span {
+	min-width: 0;
+}
+
+.wp-dialyra-business-card strong {
+	display: block;
+	font-size: 14px;
+	font-weight: 900;
+}
+
+.wp-dialyra-business-card small {
+	display: block;
+	overflow: hidden;
+	font-size: 12px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.wp-dialyra-business-card--new {
+	border-style: dashed;
+	background: rgba(23, 105, 255, 0.05);
+}
+
+.wp-dialyra-result {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 28px;
+	padding: 0 10px;
+	border-radius: 999px;
+	font-size: 12px;
+	font-style: normal;
+	font-weight: 900;
+	white-space: nowrap;
+}
+
+.wp-dialyra-result--success {
+	background: rgba(33, 201, 151, 0.14);
+	color: #08785a;
+}
+
+.wp-dialyra-result--muted {
+	background: rgba(102, 117, 138, 0.12);
+	color: var(--dialyra-muted);
+}
+
+.wp-dialyra-token-preview,
+.wp-dialyra-empty-card,
+.wp-dialyra-flow-mini-list article {
+	padding: 16px;
+	border-radius: 20px;
+}
+
+.wp-dialyra-empty-card {
+	display: flex;
+	align-items: flex-start;
+}
+
+.wp-dialyra-empty-card p {
+	margin: 4px 0 10px;
+	line-height: 1.6;
+}
+
+.wp-dialyra-empty-card a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 34px;
+	padding: 0 12px;
+	border-radius: 999px;
+	background: var(--dialyra-blue);
+	color: #fff;
+	font-weight: 900;
+	text-decoration: none;
+}
+
+.wp-dialyra-flow-mini-list article {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 14px;
+}
+
+.wp-dialyra-flow-mini-list small {
+	display: block;
+	margin-top: 3px;
+	line-height: 1.5;
+}
+
+.wp-dialyra-trigger-options {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+	margin-bottom: 14px;
+}
+
+.wp-dialyra-trigger-options label,
+.wp-dialyra-setup-check {
+	display: flex;
+	gap: 10px;
+	align-items: flex-start;
+	padding: 14px;
+	border: 1px solid rgba(16, 32, 47, 0.1);
+	border-radius: 18px;
+	background: rgba(255, 255, 255, 0.72);
+	cursor: pointer;
+}
+
+.wp-dialyra-trigger-options input,
+.wp-dialyra-setup-check input {
+	margin-top: 2px;
+}
+
+.wp-dialyra-trigger-options strong,
+.wp-dialyra-setup-check span {
+	display: block;
+	font-weight: 900;
+}
+
+.wp-dialyra-trigger-options small {
+	display: block;
+	margin-top: 4px;
+	color: var(--dialyra-muted);
+	line-height: 1.5;
+}
+
+.wp-dialyra-setup-advanced {
+	padding: 0;
+	overflow: hidden;
+}
+
+.wp-dialyra-setup-advanced summary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 18px 20px;
+	cursor: pointer;
+	font-weight: 950;
+}
+
+.wp-dialyra-setup-advanced summary small {
+	color: var(--dialyra-muted);
+	font-weight: 700;
+}
+
+.wp-dialyra-advanced-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px;
+	padding: 0 20px 20px;
+}
+
+.wp-dialyra-advanced-card {
+	padding: 16px;
+	box-shadow: none;
+}
+
+.wp-dialyra-advanced-card__head {
+	align-items: flex-start;
+	gap: 12px;
+	margin-bottom: 14px;
+}
+
+.wp-dialyra-advanced-card__head strong {
+	display: block;
+	font-weight: 950;
+}
+
+.wp-dialyra-day-picker {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.wp-dialyra-setup-muted-card {
+	display: grid;
+	gap: 4px;
+	padding: 14px 16px;
+	border: 1px solid rgba(16, 32, 47, 0.08);
+	border-radius: 18px;
+	background: rgba(23, 105, 255, 0.06);
+	color: var(--dialyra-text);
+}
+
+.wp-dialyra-setup-muted-card strong {
+	font-size: 14px;
+	font-weight: 950;
+}
+
+.wp-dialyra-setup-muted-card small {
+	color: var(--dialyra-muted);
+	font-size: 12px;
+	font-weight: 800;
+	line-height: 1.5;
+}
+
+.wp-dialyra-day-picker label {
+	position: relative;
+	cursor: pointer;
+}
+
+.wp-dialyra-day-picker input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.wp-dialyra-day-picker span {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 34px;
+	padding: 0 12px;
+	border: 1px solid rgba(16, 32, 47, 0.12);
+	border-radius: 999px;
+	background: rgba(255, 255, 255, 0.76);
+	color: var(--dialyra-muted);
+	font-size: 12px;
+	font-weight: 900;
+}
+
+.wp-dialyra-day-picker span::before {
+	content: "";
+	display: inline-flex;
+	width: 12px;
+	height: 12px;
+	border: 2px solid rgba(100, 116, 139, 0.36);
+	border-radius: 50%;
+	background: #fff;
+	box-shadow: inset 0 0 0 3px #fff;
+	transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.wp-dialyra-day-picker input:checked + span {
+	border-color: rgba(23, 105, 255, 0.32);
+	background: rgba(23, 105, 255, 0.1);
+	color: var(--dialyra-blue-dark);
+}
+
+.wp-dialyra-day-picker input:checked + span::before {
+	border-color: rgba(23, 105, 255, 0.72);
+	background: var(--dialyra-blue);
+	box-shadow: inset 0 0 0 3px #fff, 0 0 0 4px rgba(23, 105, 255, 0.08);
+}
+
+.wp-dialyra-setup-footer {
+	justify-content: flex-end;
+	gap: 10px;
+	padding-top: 4px;
+}
+
+@media (max-width: 1180px) {
+	.wp-dialyra-setup__grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 782px) {
+	.wp-dialyra-setup {
+		padding: 18px;
+		border-radius: 24px;
+	}
+
+	.wp-dialyra-setup__hero,
+	.wp-dialyra-setup-card__title,
+	.wp-dialyra-flow-mini-list article,
+	.wp-dialyra-setup-footer,
+	.wp-dialyra-setup-advanced summary {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.wp-dialyra-setup-account {
+		min-width: 0;
+		width: 100%;
+	}
+
+	.wp-dialyra-setup-steps {
+		border-radius: 22px;
+	}
+
+	.wp-dialyra-setup-step {
+		flex: 1 1 auto;
+		justify-content: center;
+	}
+
+	.wp-dialyra-trigger-options,
+	.wp-dialyra-advanced-grid,
+	.wp-dialyra-business-choice,
+	.wp-dialyra-create-business__details .wp-dialyra-setup-fields {
+		grid-template-columns: 1fr;
+	}
+
+	.wp-dialyra-business-card {
+		grid-template-columns: auto minmax(0, 1fr);
+	}
+
+	.wp-dialyra-business-card .wp-dialyra-result {
+		grid-column: 2;
+		justify-self: start;
+	}
+
+	.wp-dialyra-create-business__actions {
+		justify-content: stretch;
+	}
+
+	.wp-dialyra-create-business__actions .wp-dialyra-button {
+		width: 100%;
+		justify-content: center;
 	}
 }

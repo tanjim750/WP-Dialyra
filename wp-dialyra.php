@@ -38,6 +38,11 @@ if ( ! defined( 'WPINC' ) ) {
 define( 'WP_DIALYRA_VERSION', '1.0.0' );
 
 /**
+ * Default SIP domain agents use when registering extensions in softphone apps.
+ */
+define( 'WP_DIALYRA_SIP_DOMAIN', 'dialyra.com' );
+
+/**
  * The code that runs during plugin activation.
  * This action is documented in includes/class-wp-dialyra-activator.php
  */
