@@ -190,6 +190,7 @@ class Wp_Dialyra {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/api/class-dialyra-api-endpoints.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/auth/class-dialyra-auth-manager.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/business/class-dialyra-business-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/flow/class-dialyra-frontend-flow-json-builder.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/flow/class-dialyra-flow-manager.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/utils.php';
 
