@@ -393,7 +393,7 @@ $wp_dialyra_token_for_current_business = ! empty( $wp_dialyra_site_token['token'
 $wp_dialyra_token_prefix = ! empty( $wp_dialyra_site_token['token_prefix'] ) ? sanitize_text_field( $wp_dialyra_site_token['token_prefix'] ) : '';
 $wp_dialyra_token_created_at = ! empty( $wp_dialyra_site_token['created_at'] ) ? sanitize_text_field( $wp_dialyra_site_token['created_at'] ) : '';
 $wp_dialyra_token_display = $wp_dialyra_token_for_current_business ? ( $wp_dialyra_token_prefix ? $wp_dialyra_token_prefix . '******' : '******' ) : __( 'No token created', 'wp-dialyra' );
-$wp_dialyra_token_created_label = $wp_dialyra_token_created_at ? wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), strtotime( $wp_dialyra_token_created_at ) ) : '';
+$wp_dialyra_token_created_label = $wp_dialyra_token_created_at ? wp_date( get_option( WP_DIALYRA_WP_OPTION_DATE_FORMAT ) . ' ' . get_option( WP_DIALYRA_WP_OPTION_TIME_FORMAT ), strtotime( $wp_dialyra_token_created_at ) ) : '';
 $wp_dialyra_call_trigger_settings = isset( $wp_dialyra_setup_settings['call_trigger'] ) && is_array( $wp_dialyra_setup_settings['call_trigger'] ) ? $wp_dialyra_setup_settings['call_trigger'] : array();
 $wp_dialyra_trigger_mode = ! empty( $wp_dialyra_call_trigger_settings['mode'] ) ? sanitize_key( $wp_dialyra_call_trigger_settings['mode'] ) : 'instant';
 $wp_dialyra_trigger_mode = in_array( $wp_dialyra_trigger_mode, array( 'instant', 'delay', 'status' ), true ) ? $wp_dialyra_trigger_mode : 'instant';
@@ -891,7 +891,7 @@ $wp_dialyra_skip_call_statuses = array_values( array_intersect( $wp_dialyra_skip
 
 					<div class="wp-dialyra-settings-row">
 						<label for="wp-dialyra-new-business-email"><?php esc_html_e( 'Business email', 'wp-dialyra' ); ?></label>
-						<input id="wp-dialyra-new-business-email" name="dialyra_new_business_email" type="email" value="<?php echo esc_attr( get_option( 'admin_email' ) ); ?>">
+						<input id="wp-dialyra-new-business-email" name="dialyra_new_business_email" type="email" value="<?php echo esc_attr( get_option( WP_DIALYRA_WP_OPTION_ADMIN_EMAIL ) ); ?>">
 					</div>
 
 					<div class="wp-dialyra-settings-row">

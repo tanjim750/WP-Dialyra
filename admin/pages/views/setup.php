@@ -16,7 +16,7 @@ $wp_dialyra_user_info = is_array( $wp_dialyra_user_info ) ? $wp_dialyra_user_inf
 $wp_dialyra_user_name = ! empty( $wp_dialyra_user_info['full_name'] ) ? $wp_dialyra_user_info['full_name'] : __( 'Dialyra user', 'wp-dialyra' );
 $wp_dialyra_user_email = ! empty( $wp_dialyra_user_info['email'] ) ? $wp_dialyra_user_info['email'] : __( 'Connected account', 'wp-dialyra' );
 $wp_dialyra_store_name = get_bloginfo( 'name' );
-$wp_dialyra_store_email = get_option( 'admin_email' );
+$wp_dialyra_store_email = get_option( WP_DIALYRA_WP_OPTION_ADMIN_EMAIL );
 $wp_dialyra_store_country = '';
 $wp_dialyra_setup_defaults = class_exists( 'Wp_Dialyra_Utils' ) ? Wp_Dialyra_Utils::get_setup_defaults() : array();
 $wp_dialyra_order_statuses = class_exists( 'Wp_Dialyra_Utils' ) ? Wp_Dialyra_Utils::get_default_order_statuses() : array();
@@ -25,8 +25,8 @@ if ( function_exists( 'WC' ) && WC() && isset( WC()->countries ) ) {
 	$wp_dialyra_country_code = WC()->countries->get_base_country();
 	$wp_dialyra_countries = WC()->countries->get_countries();
 	$wp_dialyra_store_country = isset( $wp_dialyra_countries[ $wp_dialyra_country_code ] ) ? $wp_dialyra_countries[ $wp_dialyra_country_code ] : '';
-} elseif ( get_option( 'woocommerce_default_country' ) ) {
-	$wp_dialyra_country_parts = explode( ':', get_option( 'woocommerce_default_country' ) );
+} elseif ( get_option( WP_DIALYRA_WP_OPTION_WC_DEFAULT_COUNTRY ) ) {
+	$wp_dialyra_country_parts = explode( ':', get_option( WP_DIALYRA_WP_OPTION_WC_DEFAULT_COUNTRY ) );
 	$wp_dialyra_store_country = ! empty( $wp_dialyra_country_parts[0] ) ? sanitize_text_field( $wp_dialyra_country_parts[0] ) : '';
 }
 

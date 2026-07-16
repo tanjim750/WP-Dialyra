@@ -13,10 +13,14 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
+if ( ! defined( 'WP_DIALYRA_OPTION_DEFAULT_FLOW_ID' ) ) {
+	require_once dirname( __DIR__ ) . '/constant.php';
+}
+
 class Dialyra_Flow_Manager {
 
-	const DEFAULT_FLOW_ID_OPTION   = 'dialyra_default_flow_id';
-	const DEFAULT_FLOW_DATA_OPTION = 'dialyra_default_flow_data';
+	const DEFAULT_FLOW_ID_OPTION   = WP_DIALYRA_OPTION_DEFAULT_FLOW_ID;
+	const DEFAULT_FLOW_DATA_OPTION = WP_DIALYRA_OPTION_DEFAULT_FLOW_DATA;
 
 	/**
 	 * The API endpoints object.
