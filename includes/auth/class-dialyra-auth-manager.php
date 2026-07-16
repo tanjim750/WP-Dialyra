@@ -13,14 +13,18 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
+if ( ! defined( 'WP_DIALYRA_OPTION_ACCESS_TOKEN' ) ) {
+	require_once dirname( __DIR__ ) . '/constant.php';
+}
+
 class Dialyra_Auth_Manager {
 
-    const ACCESS_TOKEN_OPTION = 'dialyra_access_token';
-    const REFRESH_TOKEN_OPTION = 'dialyra_refresh_token';
-    const BUSINESS_ID_OPTION  = 'dialyra_business_id';
-    const USER_INFO_OPTION    = 'dialyra_user_info';
-    const SITE_TOKEN_OPTION   = 'dialyra_site_access_token';
-    const SETUP_SETTINGS_OPTION = 'dialyra_setup_settings';
+    const ACCESS_TOKEN_OPTION   = WP_DIALYRA_OPTION_ACCESS_TOKEN;
+    const REFRESH_TOKEN_OPTION  = WP_DIALYRA_OPTION_REFRESH_TOKEN;
+    const BUSINESS_ID_OPTION    = WP_DIALYRA_OPTION_BUSINESS_ID;
+    const USER_INFO_OPTION      = WP_DIALYRA_OPTION_USER_INFO;
+    const SITE_TOKEN_OPTION     = WP_DIALYRA_OPTION_SITE_ACCESS_TOKEN;
+    const SETUP_SETTINGS_OPTION = WP_DIALYRA_OPTION_SETUP_SETTINGS;
 
     /**
      * Save the access token.

@@ -13,11 +13,15 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
+if ( ! defined( 'WP_DIALYRA_OPTION_BUSINESS_DATA' ) ) {
+	require_once dirname( __DIR__ ) . '/constant.php';
+}
+
 class Dialyra_Business_Manager {
 
-	const BUSINESS_DATA_OPTION  = 'dialyra_business_data';
-	const SETUP_SETTINGS_OPTION = 'dialyra_setup_settings';
-	const SITE_TOKEN_OPTION     = 'dialyra_site_access_token';
+	const BUSINESS_DATA_OPTION  = WP_DIALYRA_OPTION_BUSINESS_DATA;
+	const SETUP_SETTINGS_OPTION = WP_DIALYRA_OPTION_SETUP_SETTINGS;
+	const SITE_TOKEN_OPTION     = WP_DIALYRA_OPTION_SITE_ACCESS_TOKEN;
 
 	/**
 	 * The API client object.

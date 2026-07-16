@@ -38,6 +38,11 @@ if ( ! defined( 'WPINC' ) ) {
 define( 'WP_DIALYRA_VERSION', '1.0.0' );
 
 /**
+ * Shared plugin constants.
+ */
+require_once plugin_dir_path( __FILE__ ) . 'includes/constant.php';
+
+/**
  * Default SIP domain agents use when registering extensions in softphone apps.
  */
 define( 'WP_DIALYRA_SIP_DOMAIN', 'dialyra.com' );

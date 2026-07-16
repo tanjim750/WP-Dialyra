@@ -183,6 +183,7 @@ class Wp_Dialyra {
 		/**
 		 * Shared Dialyra API, auth, setup, and manager services.
 		 */
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/constant.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/api/class-dialyra-api-config.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/api/class-dialyra-api-response.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/api/class-dialyra-api-client.php';
