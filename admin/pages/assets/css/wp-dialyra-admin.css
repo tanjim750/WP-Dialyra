@@ -4873,6 +4873,12 @@
 	font-weight: 750;
 }
 
+.wp-dialyra-flow-filter-button {
+	align-self: end;
+	min-height: 42px;
+	border-radius: 14px;
+}
+
 .wp-dialyra-flow-table {
 	display: grid;
 	gap: 10px;

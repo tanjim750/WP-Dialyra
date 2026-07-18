@@ -200,7 +200,7 @@ if ( $wp_dialyra_api_endpoints && class_exists( 'Dialyra_Auth_Manager' ) && Dial
 			$wp_dialyra_account_business_id = isset( $wp_dialyra_account_data['business']['id'] ) ? absint( $wp_dialyra_account_data['business']['id'] ) : 0;
 
 			if ( ! $wp_dialyra_current_business_id || $wp_dialyra_current_business_id === $wp_dialyra_account_business_id ) {
-				$wp_dialyra_business_manager->save_connected_business_data( $wp_dialyra_account_data['business'] );
+				$wp_dialyra_business_manager->save_connected_business_data( $wp_dialyra_account_data['business'], 'account' );
 			}
 		}
 	} elseif ( $wp_dialyra_account_response && ( 401 === $wp_dialyra_account_response->get_status_code() || 'unauthenticated' === $wp_dialyra_account_response->get_error_type() ) ) {
@@ -280,6 +280,14 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 			$error_message = esc_html__( 'Access token could not be created because no business is connected.', 'wp-dialyra' );
 		} elseif ( is_object( $wp_dialyra_token_response ) && method_exists( $wp_dialyra_token_response, 'is_successful' ) && ! $wp_dialyra_token_response->is_successful() ) {
 			$error_message = $wp_dialyra_token_response->get_message();
+		}
+
+		if ( empty( $error_message ) && $wp_dialyra_business_manager && method_exists( $wp_dialyra_business_manager, 'ensure_business_webhook' ) ) {
+			$wp_dialyra_webhook_result = $wp_dialyra_business_manager->ensure_business_webhook( $wp_dialyra_connected_business_id );
+
+			if ( is_array( $wp_dialyra_webhook_result ) && empty( $wp_dialyra_webhook_result['success'] ) ) {
+				$error_message = ! empty( $wp_dialyra_webhook_result['message'] ) ? $wp_dialyra_webhook_result['message'] : esc_html__( 'Webhook subscription could not be prepared.', 'wp-dialyra' );
+			}
 		}
 	}
 

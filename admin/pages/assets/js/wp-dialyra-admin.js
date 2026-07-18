@@ -1196,6 +1196,43 @@
 			closeDialogs();
 		});
 
+		$( document ).on( 'click', '[data-dialyra-flow-delete-open]', function() {
+			var $button = $( this );
+			var $form = $button.closest( 'form' );
+			var flowName = String( $button.data( 'dialyraFlowName' ) || '' );
+			var isDefault = '1' === String( $button.data( 'dialyraFlowIsDefault' ) || '' );
+			var $dialog = $( '#wp-dialyra-flow-delete-dialog' );
+			var $confirmButton = $dialog.find( '[data-dialyra-flow-delete-confirm]' );
+			var message = flowName
+				? 'This archives "' + flowName + '" and removes local product targeting for it. Confirm only when this flow should no longer be selectable.'
+				: 'This archives the flow and removes local product targeting for it. Confirm only when this flow should no longer be selectable.';
+
+			if ( ! $dialog.length || ! $form.length ) {
+				return;
+			}
+
+			if ( isDefault ) {
+				message = flowName
+					? '"' + flowName + '" is the current default flow. Select another default flow first, then delete this flow.'
+					: 'This is the current default flow. Select another default flow first, then delete this flow.';
+			}
+
+			$dialog.data( 'dialyraFlowDeleteForm', $form );
+			$dialog.find( '[data-dialyra-flow-delete-message]' ).text( message );
+			$confirmButton.prop( 'hidden', isDefault );
+			openDialog( 'wp-dialyra-flow-delete-dialog' );
+		});
+
+		$( document ).on( 'click', '[data-dialyra-flow-delete-confirm]', function() {
+			var $dialog = $( this ).closest( '[data-dialyra-dialog]' );
+			var $form = $dialog.data( 'dialyraFlowDeleteForm' );
+
+			if ( $form && $form.length ) {
+				closeDialogs();
+				$form.trigger( 'submit' );
+			}
+		});
+
 		$( document ).on( 'click', '[data-dialyra-dialog-open]', function() {
 			openDialog( String( $( this ).data( 'dialyraDialogOpen' ) || '' ) );
 		});

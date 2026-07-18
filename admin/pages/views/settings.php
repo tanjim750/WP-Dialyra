@@ -192,7 +192,17 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 			) : false;
 
 			if ( empty( $wp_dialyra_error ) && $response && method_exists( $response, 'is_successful' ) && $response->is_successful() ) {
-				$wp_dialyra_success = esc_html__( 'Business details saved successfully.', 'wp-dialyra' );
+				if ( method_exists( $wp_dialyra_business_manager, 'ensure_business_webhook' ) ) {
+					$wp_dialyra_webhook_result = $wp_dialyra_business_manager->ensure_business_webhook( $wp_dialyra_business_id );
+
+					if ( is_array( $wp_dialyra_webhook_result ) && empty( $wp_dialyra_webhook_result['success'] ) ) {
+						$wp_dialyra_error = ! empty( $wp_dialyra_webhook_result['message'] ) ? $wp_dialyra_webhook_result['message'] : esc_html__( 'Webhook subscription could not be prepared.', 'wp-dialyra' );
+					}
+				}
+
+				if ( empty( $wp_dialyra_error ) ) {
+					$wp_dialyra_success = esc_html__( 'Business details saved successfully.', 'wp-dialyra' );
+				}
 			} elseif ( empty( $wp_dialyra_error ) ) {
 				$wp_dialyra_error = $response && method_exists( $response, 'get_message' ) ? $response->get_message() : esc_html__( 'Business details could not be saved.', 'wp-dialyra' );
 			}
@@ -217,7 +227,14 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 
 			if ( $response && method_exists( $response, 'is_successful' ) && $response->is_successful() ) {
 				$wp_dialyra_business_id = $wp_dialyra_business_manager->get_connected_business_id();
-				$wp_dialyra_success     = esc_html__( 'Business created and connected successfully.', 'wp-dialyra' );
+				if ( method_exists( $wp_dialyra_business_manager, 'ensure_business_webhook' ) ) {
+					$wp_dialyra_webhook_result = $wp_dialyra_business_manager->ensure_business_webhook( $wp_dialyra_business_id );
+
+					if ( is_array( $wp_dialyra_webhook_result ) && empty( $wp_dialyra_webhook_result['success'] ) ) {
+						$wp_dialyra_error = ! empty( $wp_dialyra_webhook_result['message'] ) ? $wp_dialyra_webhook_result['message'] : esc_html__( 'Webhook subscription could not be prepared.', 'wp-dialyra' );
+					}
+				}
+				$wp_dialyra_success = empty( $wp_dialyra_error ) ? esc_html__( 'Business created and connected successfully.', 'wp-dialyra' ) : '';
 			} else {
 				$wp_dialyra_error = $response && method_exists( $response, 'get_message' ) ? $response->get_message() : esc_html__( 'Business could not be created.', 'wp-dialyra' );
 			}

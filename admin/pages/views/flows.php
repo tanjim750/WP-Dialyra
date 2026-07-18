@@ -128,11 +128,14 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 	} elseif ( 'delete_flow' === $wp_dialyra_action ) {
 		if ( ! $wp_dialyra_flow_id ) {
 			$wp_dialyra_notice_error = esc_html__( 'Choose a valid flow to delete.', 'wp-dialyra' );
+		} elseif ( method_exists( $wp_dialyra_flow_manager, 'get_default_flow_id' ) && $wp_dialyra_flow_id === $wp_dialyra_flow_manager->get_default_flow_id() ) {
+			$wp_dialyra_notice_error = esc_html__( 'Default flow cannot be deleted. Select another default flow first, then delete this flow.', 'wp-dialyra' );
 		} else {
+			$wp_dialyra_flow_has_product_bindings = ! empty( $wp_dialyra_assignments[ $wp_dialyra_flow_id ] );
 			$response = $wp_dialyra_flow_manager->delete_flow( $wp_dialyra_flow_id );
 
 			if ( $response && $response->is_successful() ) {
-				if ( $wp_dialyra_flow_product_manager ) {
+				if ( $wp_dialyra_flow_has_product_bindings && $wp_dialyra_flow_product_manager ) {
 					$wp_dialyra_flow_product_manager->delete_flow_assignments( $wp_dialyra_business_id, $wp_dialyra_flow_id );
 					unset( $wp_dialyra_assignments[ $wp_dialyra_flow_id ] );
 				}
@@ -141,7 +144,7 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 					delete_option( WP_DIALYRA_OPTION_FLOW_SOURCE_PREFIX . $wp_dialyra_business_id . '_' . $wp_dialyra_flow_id );
 				}
 
-				$wp_dialyra_notice_success = esc_html__( 'Flow deleted successfully.', 'wp-dialyra' );
+				$wp_dialyra_notice_success = $wp_dialyra_flow_has_product_bindings ? esc_html__( 'Flow deleted successfully. Product bindings were removed from this store.', 'wp-dialyra' ) : esc_html__( 'Flow deleted successfully.', 'wp-dialyra' );
 			} else {
 				$wp_dialyra_notice_error = $response && method_exists( $response, 'get_message' ) ? $response->get_message() : esc_html__( 'Flow delete failed.', 'wp-dialyra' );
 			}
@@ -363,7 +366,7 @@ $wp_dialyra_product_label = static function ( $flow_id ) use ( $wp_dialyra_assig
 					<span><?php esc_html_e( 'Search', 'wp-dialyra' ); ?></span>
 					<input name="flow_search" type="search" value="<?php echo esc_attr( $wp_dialyra_search_filter ); ?>" placeholder="<?php esc_attr_e( 'Search flow name...', 'wp-dialyra' ); ?>">
 				</label>
-				<button class="wp-dialyra-button wp-dialyra-button--ghost" type="submit"><?php esc_html_e( 'Filter', 'wp-dialyra' ); ?></button>
+				<button class="wp-dialyra-button wp-dialyra-button--primary wp-dialyra-flow-filter-button" type="submit"><?php esc_html_e( 'Filter', 'wp-dialyra' ); ?></button>
 			</form>
 		</div>
 
@@ -424,7 +427,7 @@ $wp_dialyra_product_label = static function ( $flow_id ) use ( $wp_dialyra_assig
 								<?php wp_nonce_field( 'wp-dialyra-flows', 'wp_dialyra_flows_nonce' ); ?>
 								<input type="hidden" name="wp_dialyra_flow_action" value="delete_flow">
 								<input type="hidden" name="flow_id" value="<?php echo esc_attr( $wp_dialyra_flow_id ); ?>">
-								<button class="wp-dialyra-icon-action wp-dialyra-icon-action--danger" type="submit" aria-label="<?php esc_attr_e( 'Delete flow', 'wp-dialyra' ); ?>" data-tooltip="<?php esc_attr_e( 'Delete', 'wp-dialyra' ); ?>" onclick="return confirm('<?php echo esc_js( __( 'Delete this flow?', 'wp-dialyra' ) ); ?>');">
+								<button class="wp-dialyra-icon-action wp-dialyra-icon-action--danger" type="button" aria-label="<?php esc_attr_e( 'Delete flow', 'wp-dialyra' ); ?>" data-tooltip="<?php esc_attr_e( 'Delete', 'wp-dialyra' ); ?>" data-dialyra-flow-delete-open data-dialyra-flow-name="<?php echo esc_attr( $wp_dialyra_flow['name'] ); ?>" data-dialyra-flow-is-default="<?php echo esc_attr( $wp_dialyra_flow_id === $wp_dialyra_default_flow_id ? '1' : '0' ); ?>">
 									<span class="dashicons dashicons-trash" aria-hidden="true"></span>
 								</button>
 							</form>
@@ -503,5 +506,29 @@ $wp_dialyra_product_label = static function ( $flow_id ) use ( $wp_dialyra_assig
 				<button class="wp-dialyra-button wp-dialyra-button--primary" type="submit"><?php esc_html_e( 'Save Product Assignment', 'wp-dialyra' ); ?></button>
 			</div>
 		</form>
+	</div>
+
+	<div id="wp-dialyra-flow-delete-dialog" class="wp-dialyra-dialog" role="dialog" aria-modal="true" aria-labelledby="wp-dialyra-flow-delete-dialog-title" hidden data-dialyra-dialog>
+		<div class="wp-dialyra-dialog__backdrop" data-dialyra-dialog-close></div>
+		<div class="wp-dialyra-dialog__panel wp-dialyra-dialog__panel--danger">
+			<div class="wp-dialyra-dialog__head">
+				<div>
+					<p class="wp-dialyra-eyebrow"><?php esc_html_e( 'Flow Library', 'wp-dialyra' ); ?></p>
+					<h3 id="wp-dialyra-flow-delete-dialog-title"><?php esc_html_e( 'Delete flow?', 'wp-dialyra' ); ?></h3>
+				</div>
+				<button class="wp-dialyra-dialog__close" type="button" data-dialyra-dialog-close aria-label="<?php esc_attr_e( 'Close dialog', 'wp-dialyra' ); ?>">
+					<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+				</button>
+			</div>
+
+			<p class="wp-dialyra-dialog__warning" data-dialyra-flow-delete-message>
+				<?php esc_html_e( 'This archives the flow and removes local product targeting for it. Confirm only when this flow should no longer be selectable.', 'wp-dialyra' ); ?>
+			</p>
+
+			<div class="wp-dialyra-agent-panel__footer">
+				<button class="wp-dialyra-button wp-dialyra-button--ghost" type="button" data-dialyra-dialog-close><?php esc_html_e( 'Cancel', 'wp-dialyra' ); ?></button>
+				<button class="wp-dialyra-button wp-dialyra-button--primary" type="button" data-dialyra-flow-delete-confirm><?php esc_html_e( 'Delete flow', 'wp-dialyra' ); ?></button>
+			</div>
+		</div>
 	</div>
 </section>
