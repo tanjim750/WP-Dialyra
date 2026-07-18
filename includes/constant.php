@@ -49,6 +49,18 @@ if ( ! defined( 'WP_DIALYRA_OPTION_DEFAULT_FLOW_DATA' ) ) {
 	define( 'WP_DIALYRA_OPTION_DEFAULT_FLOW_DATA', 'dialyra_default_flow_data' );
 }
 
+if ( ! defined( 'WP_DIALYRA_OPTION_FLOW_DRAFT_JSON' ) ) {
+	define( 'WP_DIALYRA_OPTION_FLOW_DRAFT_JSON', 'dialyra_flow_draft_json' );
+}
+
+if ( ! defined( 'WP_DIALYRA_OPTION_FLOW_SOURCE_PREFIX' ) ) {
+	define( 'WP_DIALYRA_OPTION_FLOW_SOURCE_PREFIX', 'dialyra_flow_source_' );
+}
+
+if ( ! defined( 'WP_DIALYRA_OPTION_FLOW_PRODUCT_ASSIGNMENTS_TABLE_VERSION' ) ) {
+	define( 'WP_DIALYRA_OPTION_FLOW_PRODUCT_ASSIGNMENTS_TABLE_VERSION', 'dialyra_flow_product_assignments_table_version' );
+}
+
 if ( ! defined( 'WP_DIALYRA_WP_OPTION_ADMIN_EMAIL' ) ) {
 	define( 'WP_DIALYRA_WP_OPTION_ADMIN_EMAIL', 'admin_email' );
 }

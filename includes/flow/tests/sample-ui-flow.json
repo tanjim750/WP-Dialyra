@@ -1,0 +1,500 @@
+{
+  "name": "E-commerce Shopping Assistant",
+  "description": "Customers can browse products, hear offers, confirm or cancel purchases, and talk to real agents.",
+  "startMenuId": "main_menu",
+  "transferFailed": {
+    "responseMessage": {
+      "type": "tts",
+      "message": "We could not connect your call to an agent. Returning to the main menu.",
+      "language": "en",
+      "provider": "google",
+      "voice": "gtts:free"
+    },
+    "nextStep": {
+      "type": "go_to_menu",
+      "transfer_timeout_target_menu": "main_menu"
+    }
+  },
+  "transferTimeout": {
+    "responseMessage": {
+      "type": "tts",
+      "message": "No agent answered within the allowed time. Returning to the main menu.",
+      "language": "en",
+      "provider": "google",
+      "voice": "gtts:free"
+    },
+    "nextStep": {
+      "type": "go_to_menu",
+      "transfer_timeout_target_menu": "main_menu"
+    }
+  },
+  "menus": [
+    {
+      "id": "main_menu",
+      "name": "Main Menu",
+      "description": "Entry point of the IVR.",
+      "customerInstructionMessage": {
+        "type": "tts",
+        "message": "Welcome to our store. To explore and purchase products press 1. To hear our latest offers press 2. To speak with a customer support agent press 3. To end the call press 4.",
+        "language": "en",
+        "provider": "google",
+        "voice": "gtts:free"
+      },
+      "menuInputSettings": {
+        "maxDigits": 1,
+        "timeoutSeconds": 8,
+        "maxInvalidRetries": 2,
+        "maxTimeoutRetries": 2
+      },
+      "dtmfActions": [
+        {
+          "inputKey": "1",
+          "responseMessage": {
+            "type": "tts",
+            "message": "Opening the product purchase menu.",
+            "language": "en",
+            "provider": "google",
+            "voice": "gtts:free"
+          },
+          "businessAction": {
+            "type": "no_action"
+          },
+          "nextStep": {
+            "type": "go_to_menu",
+            "targetMenu": "product_menu"
+          }
+        },
+        {
+          "inputKey": "2",
+          "responseMessage": {
+            "type": "audio",
+            "audioAssetId": 28
+          },
+          "businessAction": {
+            "type": "no_action"
+          },
+          "nextStep": {
+            "type": "go_to_menu",
+            "targetMenu": "offers_menu"
+          }
+        },
+        {
+          "inputKey": "3",
+          "responseMessage": {
+            "type": "tts",
+            "message": "Please choose the department you want to contact.",
+            "language": "en",
+            "provider": "google",
+            "voice": "gtts:free"
+          },
+          "businessAction": {
+            "type": "no_action"
+          },
+          "nextStep": {
+            "type": "go_to_menu",
+            "targetMenu": "agent_menu"
+          }
+        },
+        {
+          "inputKey": "4",
+          "responseMessage": {
+            "type": "tts",
+            "message": "Thank you for calling. Goodbye.",
+            "language": "en",
+            "provider": "google",
+            "voice": "gtts:free"
+          },
+          "businessAction": {
+            "type": "no_action"
+          },
+          "nextStep": {
+            "type": "hangup"
+          }
+        }
+      ],
+      "invalidInputHandling": {
+        "responseMessage": {
+          "type": "tts",
+          "message": "You entered an invalid option. Please try again.",
+          "language": "en",
+          "provider": "google",
+          "voice": "gtts:free"
+        },
+        "afterMaxInvalidRetryAction": {
+          "type": "hangup"
+        }
+      },
+      "timeoutHandling": {
+        "responseMessage": {
+          "type": "tts",
+          "message": "We did not receive any input. The main menu will be repeated.",
+          "language": "en",
+          "provider": "google",
+          "voice": "gtts:free"
+        },
+        "nextStep": {
+          "type": "repeat_current_menu"
+        }
+      }
+    },
+    {
+      "id": "product_menu",
+      "name": "Product Menu",
+      "description": "Product information and purchase confirmation.",
+      "customerInstructionMessage": {
+        "type": "audio",
+        "audioAssetId": 28
+      },
+      "menuInputSettings": {
+        "maxDigits": 1,
+        "timeoutSeconds": 10,
+        "maxInvalidRetries": 2,
+        "maxTimeoutRetries": 1
+      },
+      "dtmfActions": [
+        {
+          "inputKey": "1",
+          "responseMessage": {
+            "type": "tts",
+            "message": "Our featured product is available with cash on delivery and nationwide delivery.",
+            "language": "en",
+            "provider": "google",
+            "voice": "gtts:free"
+          },
+          "businessAction": {
+            "type": "no_action"
+          },
+          "nextStep": {
+            "type": "repeat_current_menu"
+          }
+        },
+        {
+          "inputKey": "2",
+          "responseMessage": {
+            "type": "tts",
+            "message": "Thank you. Your order has been confirmed successfully.",
+            "language": "en",
+            "provider": "google",
+            "voice": "gtts:free"
+          },
+          "businessAction": {
+            "type": "confirm_order"
+          },
+          "nextStep": {
+            "type": "end_flow"
+          }
+        },
+        {
+          "inputKey": "3",
+          "responseMessage": {
+            "type": "audio",
+            "audioAssetId": 28
+          },
+          "businessAction": {
+            "type": "cancel_order"
+          },
+          "nextStep": {
+            "type": "end_flow"
+          }
+        },
+        {
+          "inputKey": "4",
+          "responseMessage": {
+            "type": "tts",
+            "message": "Returning to the main menu.",
+            "language": "en",
+            "provider": "google",
+            "voice": "gtts:free"
+          },
+          "businessAction": {
+            "type": "no_action"
+          },
+          "nextStep": {
+            "type": "go_to_menu",
+            "targetMenu": "main_menu"
+          }
+        },
+        {
+          "inputKey": "5",
+          "responseMessage": {
+            "type": "tts",
+            "message": "Thank you for visiting our store. Goodbye.",
+            "language": "en",
+            "provider": "google",
+            "voice": "gtts:free"
+          },
+          "businessAction": {
+            "type": "no_action"
+          },
+          "nextStep": {
+            "type": "hangup"
+          }
+        }
+      ],
+      "invalidInputHandling": {
+        "responseMessage": {
+          "type": "audio",
+          "audioAssetId": 28
+        },
+        "afterMaxInvalidRetryAction": {
+          "type": "go_to_menu",
+          "targetMenu": "main_menu"
+        }
+      },
+      "timeoutHandling": {
+        "responseMessage": {
+          "type": "tts",
+          "message": "No response was received. Returning to the main menu.",
+          "language": "en",
+          "provider": "google",
+          "voice": "gtts:free"
+        },
+        "nextStep": {
+          "type": "go_to_menu",
+          "targetMenu": "main_menu"
+        }
+      }
+    },
+    {
+      "id": "offers_menu",
+      "name": "Offers Menu",
+      "description": "Current promotions and offers.",
+      "customerInstructionMessage": {
+        "type": "tts",
+        "message": "Our current offer provides a ten percent discount on selected products. Press 1 to hear the offer again. Press 2 to go to the product purchase menu. Press 3 to speak with the sales department. Press 4 to return to the main menu. Press 5 to end the call.",
+        "language": "en",
+        "provider": "google",
+        "voice": "gtts:free"
+      },
+      "menuInputSettings": {
+        "maxDigits": 1,
+        "timeoutSeconds": 8,
+        "maxInvalidRetries": 2,
+        "maxTimeoutRetries": 1
+      },
+      "dtmfActions": [
+        {
+          "inputKey": "1",
+          "responseMessage": {
+            "type": "audio",
+            "audioAssetId": 28
+          },
+          "businessAction": {
+            "type": "no_action"
+          },
+          "nextStep": {
+            "type": "repeat_current_menu"
+          }
+        },
+        {
+          "inputKey": "2",
+          "responseMessage": {
+            "type": "tts",
+            "message": "Opening the product purchase menu.",
+            "language": "en",
+            "provider": "google",
+            "voice": "gtts:free"
+          },
+          "businessAction": {
+            "type": "no_action"
+          },
+          "nextStep": {
+            "type": "go_to_menu",
+            "targetMenu": "product_menu"
+          }
+        },
+        {
+          "inputKey": "3",
+          "responseMessage": {
+            "type": "tts",
+            "message": "Please wait while we connect you to our sales department.",
+            "language": "en",
+            "provider": "google",
+            "voice": "gtts:free"
+          },
+          "businessAction": {
+            "type": "transfer_department",
+            "department_target_3": 3
+          },
+          "nextStep": {
+            "type": "end_flow"
+          }
+        },
+        {
+          "inputKey": "4",
+          "responseMessage": {
+            "type": "none"
+          },
+          "businessAction": {
+            "type": "no_action"
+          },
+          "nextStep": {
+            "type": "go_to_menu",
+            "targetMenu": "main_menu"
+          }
+        },
+        {
+          "inputKey": "5",
+          "responseMessage": {
+            "type": "audio",
+            "audioAssetId": 28
+          },
+          "businessAction": {
+            "type": "no_action"
+          },
+          "nextStep": {
+            "type": "hangup"
+          }
+        }
+      ],
+      "invalidInputHandling": {
+        "responseMessage": {
+          "type": "tts",
+          "message": "That option is not available. Please select a valid offer option.",
+          "language": "en",
+          "provider": "google",
+          "voice": "gtts:free"
+        },
+        "afterMaxInvalidRetryAction": {
+          "type": "repeat_current_menu"
+        }
+      },
+      "timeoutHandling": {
+        "responseMessage": {
+          "type": "tts",
+          "message": "We did not receive a selection. Returning to the main menu.",
+          "language": "en",
+          "provider": "google",
+          "voice": "gtts:free"
+        },
+        "nextStep": {
+          "type": "go_to_menu",
+          "targetMenu": "main_menu"
+        }
+      }
+    },
+    {
+      "id": "agent_menu",
+      "name": "Agent Menu",
+      "description": "Department selection menu.",
+      "customerInstructionMessage": {
+        "type": "audio",
+        "audioAssetId": 28
+      },
+      "menuInputSettings": {
+        "maxDigits": 1,
+        "timeoutSeconds": 10,
+        "maxInvalidRetries": 2,
+        "maxTimeoutRetries": 2
+      },
+      "dtmfActions": [
+        {
+          "inputKey": "1",
+          "responseMessage": {
+            "type": "tts",
+            "message": "Connecting you to the sales department.",
+            "language": "en",
+            "provider": "google",
+            "voice": "gtts:free"
+          },
+          "businessAction": {
+            "type": "transfer_department",
+            "department_target_1": 3
+          },
+          "nextStep": {
+            "type": "end_flow"
+          }
+        },
+        {
+          "inputKey": "2",
+          "responseMessage": {
+            "type": "tts",
+            "message": "Connecting you to the order support department.",
+            "language": "en",
+            "provider": "google",
+            "voice": "gtts:free"
+          },
+          "businessAction": {
+            "type": "transfer_department",
+            "department_target_2": 3
+          },
+          "nextStep": {
+            "type": "end_flow"
+          }
+        },
+        {
+          "inputKey": "3",
+          "responseMessage": {
+            "type": "audio",
+            "audioAssetId": 28
+          },
+          "businessAction": {
+            "type": "transfer_department",
+            "department_target_3": 3
+          },
+          "nextStep": {
+            "type": "end_flow"
+          }
+        },
+        {
+          "inputKey": "4",
+          "responseMessage": {
+            "type": "tts",
+            "message": "Returning to the main menu.",
+            "language": "en",
+            "provider": "google",
+            "voice": "gtts:free"
+          },
+          "businessAction": {
+            "type": "no_action"
+          },
+          "nextStep": {
+            "type": "go_to_menu",
+            "targetMenu": "main_menu"
+          }
+        },
+        {
+          "inputKey": "5",
+          "responseMessage": {
+            "type": "tts",
+            "message": "Thank you for calling. Goodbye.",
+            "language": "en",
+            "provider": "google",
+            "voice": "gtts:free"
+          },
+          "businessAction": {
+            "type": "no_action"
+          },
+          "nextStep": {
+            "type": "hangup"
+          }
+        }
+      ],
+      "invalidInputHandling": {
+        "responseMessage": {
+          "type": "tts",
+          "message": "Invalid department selection. Please try again.",
+          "language": "en",
+          "provider": "google",
+          "voice": "gtts:free"
+        },
+        "afterMaxInvalidRetryAction": {
+          "type": "repeat_current_menu"
+        }
+      },
+      "timeoutHandling": {
+        "responseMessage": {
+          "type": "tts",
+          "message": "We did not receive a department selection. Returning to the main menu.",
+          "language": "en",
+          "provider": "google",
+          "voice": "gtts:free"
+        },
+        "nextStep": {
+          "type": "go_to_menu",
+          "targetMenu": "main_menu"
+        }
+      }
+    }
+  ]
+}

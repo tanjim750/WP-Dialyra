@@ -3580,6 +3580,24 @@
 	line-height: 1.6;
 }
 
+.wp-dialyra-dialog__reference-list {
+	display: grid;
+	gap: 8px;
+	margin: -4px 0 18px;
+	padding: 0;
+	list-style: none;
+}
+
+.wp-dialyra-dialog__reference-list li {
+	padding: 10px 12px;
+	border: 1px solid rgba(234, 48, 91, 0.16);
+	border-radius: 12px;
+	background: rgba(255, 255, 255, 0.72);
+	color: var(--dialyra-ink);
+	font-size: 13px;
+	font-weight: 850;
+}
+
 .wp-dialyra-dialog-lock {
 	overflow: hidden;
 }
@@ -4420,6 +4438,13 @@
 	box-shadow: 0 12px 22px rgba(16, 32, 47, 0.12);
 }
 
+.wp-dialyra-flow-icon-button:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+	transform: none;
+	box-shadow: none;
+}
+
 .wp-dialyra-flow-icon-button:hover::after,
 .wp-dialyra-flow-icon-button:focus::after {
 	opacity: 1;
@@ -4500,6 +4525,12 @@
 .wp-dialyra-menu-list__actions {
 	display: flex;
 	gap: 6px;
+}
+
+.wp-dialyra-menu-list__item .wp-dialyra-flow-icon-button {
+	width: 34px;
+	height: 34px;
+	border-radius: 12px;
 }
 
 .wp-dialyra-global-status-list div {
@@ -4611,6 +4642,44 @@
 .wp-dialyra-dtmf-actions__footer {
 	display: flex;
 	justify-content: flex-end;
+}
+
+.wp-dialyra-flow-empty-inline {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: 6px 12px;
+	align-items: center;
+	padding: 18px;
+	border: 1px dashed rgba(23, 105, 255, 0.24);
+	border-radius: 20px;
+	background:
+		radial-gradient(circle at 0% 0%, rgba(33, 201, 151, 0.1), transparent 38%),
+		rgba(255, 255, 255, 0.62);
+	color: var(--dialyra-muted);
+}
+
+.wp-dialyra-flow-empty-inline .dashicons {
+	grid-row: span 2;
+	width: 36px;
+	height: 36px;
+	border-radius: 14px;
+	background: rgba(23, 105, 255, 0.1);
+	color: var(--dialyra-blue);
+	font-size: 18px;
+	line-height: 36px;
+	text-align: center;
+}
+
+.wp-dialyra-flow-empty-inline strong {
+	color: var(--dialyra-ink);
+	font-size: 14px;
+	font-weight: 900;
+}
+
+.wp-dialyra-flow-empty-inline small {
+	font-size: 12px;
+	font-weight: 750;
+	line-height: 1.5;
 }
 
 .wp-dialyra-timeout-configs {
@@ -4909,6 +4978,12 @@
 	font-weight: 850;
 }
 
+.wp-dialyra-inline-action {
+	display: inline-flex;
+	margin: 0;
+	padding: 0;
+}
+
 .wp-dialyra-icon-action--success {
 	color: #087f5b;
 }
@@ -5055,6 +5130,25 @@
 	font-size: 12px;
 	font-style: normal;
 	font-weight: 750;
+}
+
+.wp-dialyra-product-options__empty {
+	padding: 16px;
+	border: 1px dashed rgba(16, 32, 47, 0.14);
+	border-radius: 16px;
+	background: rgba(255, 255, 255, 0.66);
+}
+
+.wp-dialyra-product-options__empty strong {
+	display: block;
+	color: var(--dialyra-ink);
+	font-weight: 900;
+}
+
+.wp-dialyra-product-options__empty p {
+	margin: 6px 0 0;
+	color: var(--dialyra-muted);
+	font-weight: 650;
 }
 
 .wp-dialyra-product-picker__selected > span {

@@ -362,7 +362,7 @@ if ( $wp_dialyra_flow_manager && $wp_dialyra_business_id ) {
 
 	if ( $flows_response && method_exists( $flows_response, 'is_successful' ) && $flows_response->is_successful() ) {
 		$wp_dialyra_flows = array_values( array_filter( array_map( $wp_dialyra_normalize_flow, $wp_dialyra_extract_response_items( $flows_response ) ), static function ( $flow ) {
-			return ! empty( $flow['id'] );
+			return ! empty( $flow['id'] ) && 'archived' !== $flow['status'];
 		} ) );
 	} elseif ( $flows_response && method_exists( $flows_response, 'get_message' ) ) {
 		$wp_dialyra_flow_fetch_error = $flows_response->get_message();

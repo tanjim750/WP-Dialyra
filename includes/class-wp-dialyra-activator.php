@@ -30,7 +30,10 @@ class Wp_Dialyra_Activator {
 	 * @since    1.0.0
 	 */
 	public static function activate() {
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/constant.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/flow/class-dialyra-flow-product-assignment-manager.php';
 
+		Dialyra_Flow_Product_Assignment_Manager::install_table();
 	}
 
 }

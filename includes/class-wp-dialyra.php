@@ -112,6 +112,15 @@ class Wp_Dialyra {
 	protected $flow_manager;
 
 	/**
+	 * The Dialyra flow product assignment manager object.
+	 *
+	 * @since    1.0.0
+	 * @access   protected
+	 * @var      Dialyra_Flow_Product_Assignment_Manager
+	 */
+	protected $flow_product_assignment_manager;
+
+	/**
 	 * Define the core functionality of the plugin.
 	 *
 	 * Set the plugin name and the plugin version that can be used throughout the plugin.
@@ -160,6 +169,7 @@ class Wp_Dialyra {
 		$this->api_endpoints    = new Dialyra_API_Endpoints( $this->api_client );
 		$this->business_manager = new Dialyra_Business_Manager( $this->api_client, $this->api_endpoints );
 		$this->flow_manager     = new Dialyra_Flow_Manager( $this->api_endpoints );
+		$this->flow_product_assignment_manager = new Dialyra_Flow_Product_Assignment_Manager();
 	}
 
 	/**
@@ -191,7 +201,10 @@ class Wp_Dialyra {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/auth/class-dialyra-auth-manager.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/business/class-dialyra-business-manager.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/flow/class-dialyra-frontend-flow-json-builder.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/flow/class-dialyra-flow-compiler.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/flow/class-dialyra-flow-graph-decompiler.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/flow/class-dialyra-flow-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/flow/class-dialyra-flow-product-assignment-manager.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/utils.php';
 
 		/**
@@ -341,6 +354,16 @@ class Wp_Dialyra {
 	 */
 	public function get_flow_manager() {
 		return $this->flow_manager;
+	}
+
+	/**
+	 * Get the flow product assignment manager service.
+	 *
+	 * @since     1.0.0
+	 * @return    Dialyra_Flow_Product_Assignment_Manager
+	 */
+	public function get_flow_product_assignment_manager() {
+		return $this->flow_product_assignment_manager;
 	}
 
 }
