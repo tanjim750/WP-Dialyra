@@ -55,9 +55,9 @@ class Wp_Dialyra_Utils {
 	 */
 	public static function get_call_trigger_defaults() {
 		return array(
-			'mode'          => 'instant',
-			'order_status'  => 'processing',
-			'delay_minutes' => 5,
+			'mode'          => defined( 'WP_DIALYRA_DEFAULT_CALL_TRIGGER_MODE' ) ? WP_DIALYRA_DEFAULT_CALL_TRIGGER_MODE : 'instant',
+			'order_status'  => defined( 'WP_DIALYRA_DEFAULT_CALL_TRIGGER_ORDER_STATUS' ) ? WP_DIALYRA_DEFAULT_CALL_TRIGGER_ORDER_STATUS : 'processing',
+			'delay_minutes' => defined( 'WP_DIALYRA_DEFAULT_CALL_TRIGGER_DELAY_MINUTES' ) ? WP_DIALYRA_DEFAULT_CALL_TRIGGER_DELAY_MINUTES : 5,
 		);
 	}
 
@@ -69,11 +69,9 @@ class Wp_Dialyra_Utils {
 	 */
 	public static function get_retry_policy_defaults() {
 		return array(
-			'max_attempts'               => 2,
-			'delay_minutes'              => 15,
-			'only_during_business_hours' => true,
-			'stop_on_confirmed'          => true,
-			'stop_on_cancelled'          => true,
+			'max_attempts'               => defined( 'WP_DIALYRA_DEFAULT_RETRY_MAX_ATTEMPTS' ) ? WP_DIALYRA_DEFAULT_RETRY_MAX_ATTEMPTS : 2,
+			'delay_minutes'              => defined( 'WP_DIALYRA_DEFAULT_RETRY_DELAY_MINUTES' ) ? WP_DIALYRA_DEFAULT_RETRY_DELAY_MINUTES : 15,
+			'only_during_business_hours' => defined( 'WP_DIALYRA_DEFAULT_RETRY_ONLY_DURING_BUSINESS_HOURS' ) ? WP_DIALYRA_DEFAULT_RETRY_ONLY_DURING_BUSINESS_HOURS : true,
 		);
 	}
 
@@ -85,10 +83,10 @@ class Wp_Dialyra_Utils {
 	 */
 	public static function get_business_hours_defaults() {
 		return array(
-			'availability_mode' => 'always_active',
-			'days'              => array( 'all' ),
-			'open_time'         => '09:00',
-			'close_time'        => '18:00',
+			'availability_mode' => defined( 'WP_DIALYRA_DEFAULT_BUSINESS_HOURS_MODE' ) ? WP_DIALYRA_DEFAULT_BUSINESS_HOURS_MODE : 'always_active',
+			'days'              => defined( 'WP_DIALYRA_DEFAULT_BUSINESS_HOURS_DAYS' ) && is_array( WP_DIALYRA_DEFAULT_BUSINESS_HOURS_DAYS ) ? WP_DIALYRA_DEFAULT_BUSINESS_HOURS_DAYS : array( 'all' ),
+			'open_time'         => defined( 'WP_DIALYRA_DEFAULT_BUSINESS_HOURS_OPEN_TIME' ) ? WP_DIALYRA_DEFAULT_BUSINESS_HOURS_OPEN_TIME : '09:00',
+			'close_time'        => defined( 'WP_DIALYRA_DEFAULT_BUSINESS_HOURS_CLOSE_TIME' ) ? WP_DIALYRA_DEFAULT_BUSINESS_HOURS_CLOSE_TIME : '18:00',
 			'timezone'          => self::get_default_timezone(),
 		);
 	}
@@ -101,7 +99,7 @@ class Wp_Dialyra_Utils {
 	 */
 	public static function get_call_capacity_defaults() {
 		return array(
-			'max_concurrent_calls' => 1,
+			'max_concurrent_calls' => defined( 'WP_DIALYRA_DEFAULT_MAX_CONCURRENT_CALLS' ) ? WP_DIALYRA_DEFAULT_MAX_CONCURRENT_CALLS : 1,
 		);
 	}
 
@@ -113,12 +111,17 @@ class Wp_Dialyra_Utils {
 	 */
 	public static function get_order_status_mapping_defaults() {
 		return array(
-			'confirmed_status' => 'processing',
-			'cancelled_status' => 'cancelled',
-			'no_answer_status' => 'no_change',
-			'busy_status'      => 'no_change',
-			'failed_status'    => 'no_change',
-			'skip_call_statuses' => array( 'completed', 'cancelled', 'draft', 'refunded' ),
+			'confirmed_status'   => defined( 'WP_DIALYRA_DEFAULT_ORDER_CONFIRMED_STATUS' ) ? WP_DIALYRA_DEFAULT_ORDER_CONFIRMED_STATUS : 'processing',
+			'cancelled_status'   => defined( 'WP_DIALYRA_DEFAULT_ORDER_CANCELLED_STATUS' ) ? WP_DIALYRA_DEFAULT_ORDER_CANCELLED_STATUS : 'cancelled',
+			'no_answer_status'   => defined( 'WP_DIALYRA_DEFAULT_CALL_NO_ANSWER_STATUS' ) ? WP_DIALYRA_DEFAULT_CALL_NO_ANSWER_STATUS : 'no_change',
+			'busy_status'        => defined( 'WP_DIALYRA_DEFAULT_CALL_BUSY_STATUS' ) ? WP_DIALYRA_DEFAULT_CALL_BUSY_STATUS : 'no_change',
+			'failed_status'      => defined( 'WP_DIALYRA_DEFAULT_CALL_FAILED_STATUS' ) ? WP_DIALYRA_DEFAULT_CALL_FAILED_STATUS : 'no_change',
+			'confirmed_note'     => defined( 'WP_DIALYRA_DEFAULT_ORDER_CONFIRMED_NOTE' ) ? WP_DIALYRA_DEFAULT_ORDER_CONFIRMED_NOTE : 'Dialyra call confirmed the order.',
+			'cancelled_note'     => defined( 'WP_DIALYRA_DEFAULT_ORDER_CANCELLED_NOTE' ) ? WP_DIALYRA_DEFAULT_ORDER_CANCELLED_NOTE : 'Dialyra call cancelled the order.',
+			'no_answer_note'     => defined( 'WP_DIALYRA_DEFAULT_CALL_NO_ANSWER_NOTE' ) ? WP_DIALYRA_DEFAULT_CALL_NO_ANSWER_NOTE : 'Dialyra call ended with no answer.',
+			'busy_note'          => defined( 'WP_DIALYRA_DEFAULT_CALL_BUSY_NOTE' ) ? WP_DIALYRA_DEFAULT_CALL_BUSY_NOTE : 'Dialyra call reached a busy line.',
+			'failed_note'        => defined( 'WP_DIALYRA_DEFAULT_CALL_FAILED_NOTE' ) ? WP_DIALYRA_DEFAULT_CALL_FAILED_NOTE : 'Dialyra call failed.',
+			'skip_call_statuses' => defined( 'WP_DIALYRA_DEFAULT_SKIP_CALL_STATUSES' ) && is_array( WP_DIALYRA_DEFAULT_SKIP_CALL_STATUSES ) ? WP_DIALYRA_DEFAULT_SKIP_CALL_STATUSES : array( 'completed', 'cancelled', 'draft', 'refunded' ),
 		);
 	}
 

@@ -421,6 +421,12 @@ class Dialyra_Flow_Compiler {
 		$actions     = isset( $menu['dtmfActions'] ) && is_array( $menu['dtmfActions'] ) ? array_values( $menu['dtmfActions'] ) : array();
 
 		$this->add_message_node( $message_key, $menu_name . ' Message', $menu['customerInstructionMessage'] ?? array() );
+
+		if ( empty( $actions ) ) {
+			$this->add_edge( $message_key, self::END_NODE_KEY, 'always', '', 1 );
+			return;
+		}
+
 		$this->add_node(
 			array(
 				'node_key'  => $gather_key,

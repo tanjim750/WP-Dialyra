@@ -15,7 +15,7 @@ if ( ! defined( 'WPINC' ) ) {
 
 class Dialyra_Flow_Product_Assignment_Manager {
 
-	const TABLE_VERSION = '1.0.0';
+	const TABLE_VERSION = '1.0.1';
 
 	/**
 	 * Constructor.
@@ -47,8 +47,7 @@ class Dialyra_Flow_Product_Assignment_Manager {
 			created_at datetime NOT NULL,
 			updated_at datetime NOT NULL,
 			PRIMARY KEY  (id),
-			UNIQUE KEY business_flow_product (business_id, flow_id, product_id),
-			KEY business_product (business_id, product_id),
+			UNIQUE KEY business_product_unique (business_id, product_id),
 			KEY business_flow (business_id, flow_id)
 		) {$charset_collate};";
 
@@ -118,6 +117,52 @@ class Dialyra_Flow_Product_Assignment_Manager {
 	}
 
 	/**
+	 * Get assigned flow IDs keyed by product ID.
+	 *
+	 * @since    1.0.0
+	 * @param    int      $business_id    Business ID.
+	 * @param    array    $product_ids    Product IDs.
+	 * @return   array
+	 */
+	public function get_flow_ids_for_products( $business_id, $product_ids ) {
+		global $wpdb;
+
+		$business_id = absint( $business_id );
+		$product_ids = is_array( $product_ids ) ? array_values( array_filter( array_unique( array_map( 'absint', $product_ids ) ) ) ) : array();
+
+		if ( ! $business_id || empty( $product_ids ) ) {
+			return array();
+		}
+
+		$placeholders = implode( ', ', array_fill( 0, count( $product_ids ), '%d' ) );
+		$query_args   = array_merge( array( $business_id ), $product_ids );
+		$rows         = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT product_id, flow_id FROM ' . self::get_table_name() . " WHERE business_id = %d AND product_id IN ({$placeholders})",
+				$query_args
+			),
+			ARRAY_A
+		);
+
+		if ( empty( $rows ) || ! is_array( $rows ) ) {
+			return array();
+		}
+
+		$assignments = array();
+
+		foreach ( $rows as $row ) {
+			$product_id = isset( $row['product_id'] ) ? absint( $row['product_id'] ) : 0;
+			$flow_id    = isset( $row['flow_id'] ) ? absint( $row['flow_id'] ) : 0;
+
+			if ( $product_id && $flow_id ) {
+				$assignments[ $product_id ] = $flow_id;
+			}
+		}
+
+		return $assignments;
+	}
+
+	/**
 	 * Save the complete product list for one flow.
 	 *
 	 * @since    1.0.0
@@ -154,6 +199,15 @@ class Dialyra_Flow_Product_Assignment_Manager {
 		}
 
 		foreach ( $product_ids as $product_id ) {
+			$wpdb->delete(
+				$table_name,
+				array(
+					'business_id' => $business_id,
+					'product_id'  => $product_id,
+				),
+				array( '%d', '%d' )
+			);
+
 			$inserted = $wpdb->insert(
 				$table_name,
 				array(

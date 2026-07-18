@@ -153,7 +153,7 @@ class Dialyra_Flow_Graph_Decompiler {
 		$menu_ids = array();
 
 		foreach ( array_keys( $this->nodes ) as $node_key ) {
-			if ( preg_match( '/^menu_(.+)_message$/', $node_key, $matches ) && isset( $this->nodes[ 'menu_' . $matches[1] . '_gather' ] ) ) {
+			if ( preg_match( '/^menu_(.+)_message$/', $node_key, $matches ) ) {
 				$menu_ids[] = $matches[1];
 			}
 		}
@@ -230,6 +230,10 @@ class Dialyra_Flow_Graph_Decompiler {
 		$gather_key = $this->menu_gather_key( $menu_id );
 		$actions    = array();
 
+		if ( ! isset( $this->nodes[ $gather_key ] ) ) {
+			return $actions;
+		}
+
 		foreach ( $this->edges_by_source[ $gather_key ] ?? array() as $edge ) {
 			if ( 'dtmf' !== $edge['condition_type'] || '' === ( $edge['condition_value'] ?? '' ) ) {
 				continue;
@@ -243,15 +247,6 @@ class Dialyra_Flow_Graph_Decompiler {
 				'responseMessage' => $chain['responseMessage'],
 				'businessAction'  => $chain['businessAction'],
 				'nextStep'        => $chain['nextStep'],
-			);
-		}
-
-		if ( empty( $actions ) ) {
-			$actions[] = array(
-				'inputKey'        => '1',
-				'responseMessage' => array( 'type' => 'none' ),
-				'businessAction'  => array( 'type' => 'no_action' ),
-				'nextStep'        => array( 'type' => 'hangup' ),
 			);
 		}
 

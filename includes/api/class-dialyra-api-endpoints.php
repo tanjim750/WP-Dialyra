@@ -417,6 +417,98 @@ class Dialyra_API_Endpoints {
         return $this->client->delete( 'access-tokens/' . absint( $token_id ) );
     }
 
+    // Business Webhooks
+
+    /**
+     * Create a business webhook subscription.
+     *
+     * @since    1.0.0
+     * @param    array     $webhook_data    Webhook subscription fields.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function create_business_webhook( $webhook_data ) {
+        return $this->client->post( 'business-webhooks', $this->sanitize_business_webhook_payload( $webhook_data ) );
+    }
+
+    /**
+     * Get business webhook subscriptions.
+     *
+     * @since    1.0.0
+     * @param    array     $query_params    Optional query parameters.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function get_business_webhooks( $query_params = array() ) {
+        return $this->client->get( 'business-webhooks', $this->sanitize_payload( $query_params ) );
+    }
+
+    /**
+     * Update a business webhook subscription.
+     *
+     * @since    1.0.0
+     * @param    int       $webhook_id      Webhook subscription ID.
+     * @param    array     $webhook_data    Webhook subscription fields.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function update_business_webhook( $webhook_id, $webhook_data ) {
+        return $this->client->put( 'business-webhooks/' . absint( $webhook_id ), $this->sanitize_business_webhook_payload( $webhook_data ) );
+    }
+
+    /**
+     * Pause a business webhook subscription.
+     *
+     * @since    1.0.0
+     * @param    int       $webhook_id    Webhook subscription ID.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function pause_business_webhook( $webhook_id ) {
+        return $this->client->post( 'business-webhooks/' . absint( $webhook_id ) . '/pause' );
+    }
+
+    /**
+     * Resume a business webhook subscription.
+     *
+     * @since    1.0.0
+     * @param    int       $webhook_id    Webhook subscription ID.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function resume_business_webhook( $webhook_id ) {
+        return $this->client->post( 'business-webhooks/' . absint( $webhook_id ) . '/resume' );
+    }
+
+    /**
+     * Disable a business webhook subscription.
+     *
+     * @since    1.0.0
+     * @param    int       $webhook_id    Webhook subscription ID.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function delete_business_webhook( $webhook_id ) {
+        return $this->client->delete( 'business-webhooks/' . absint( $webhook_id ) );
+    }
+
+    /**
+     * Test a business webhook subscription.
+     *
+     * @since    1.0.0
+     * @param    int       $webhook_id    Webhook subscription ID.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function test_business_webhook( $webhook_id ) {
+        return $this->client->post( 'business-webhooks/' . absint( $webhook_id ) . '/test' );
+    }
+
+    /**
+     * Originate a runtime call using a business access token.
+     *
+     * @since    1.0.0
+     * @param    array     $payload         Originate payload.
+     * @param    string    $access_token    Business access token.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function originate_call( $payload, $access_token ) {
+        return $this->client->post_with_business_access_token_to_version( 'v3', 'runtime/calls/originate', $this->sanitize_call_originate_payload( $payload ), $access_token );
+    }
+
     // Agents
 
     /**
@@ -1081,6 +1173,77 @@ class Dialyra_API_Endpoints {
 
         if ( isset( $payload['scopes'] ) && is_array( $payload['scopes'] ) ) {
             $payload['scopes'] = array_values( array_filter( array_map( 'sanitize_text_field', $payload['scopes'] ) ) );
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize a business webhook payload.
+     *
+     * @since    1.0.0
+     * @param    array     $webhook_data    Raw webhook data.
+     * @return   array
+     */
+    private function sanitize_business_webhook_payload( $webhook_data ) {
+        $payload = $this->sanitize_allowed_payload( $webhook_data, array(
+            'business_id',
+            'name',
+            'url',
+            'event_types',
+            'timeout_seconds',
+            'status',
+            'secret',
+            'rotate_secret',
+        ) );
+
+        if ( isset( $payload['business_id'] ) ) {
+            $payload['business_id'] = absint( $payload['business_id'] );
+        }
+
+        if ( isset( $payload['url'] ) ) {
+            $payload['url'] = esc_url_raw( $payload['url'] );
+        }
+
+        if ( isset( $payload['event_types'] ) && is_array( $payload['event_types'] ) ) {
+            $payload['event_types'] = array_values( array_filter( array_map( 'sanitize_text_field', $payload['event_types'] ) ) );
+        }
+
+        if ( isset( $payload['timeout_seconds'] ) ) {
+            $payload['timeout_seconds'] = absint( $payload['timeout_seconds'] );
+        }
+
+        if ( isset( $payload['rotate_secret'] ) ) {
+            $payload['rotate_secret'] = (bool) $payload['rotate_secret'];
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize a runtime call originate payload.
+     *
+     * @since    1.0.0
+     * @param    array     $payload_data    Raw originate payload.
+     * @return   array
+     */
+    private function sanitize_call_originate_payload( $payload_data ) {
+        $payload = $this->sanitize_allowed_payload( $payload_data, array(
+            'phone',
+            'flow_id',
+            'webhook_variables',
+        ) );
+
+        if ( isset( $payload['phone'] ) ) {
+            $payload['phone'] = sanitize_text_field( $payload['phone'] );
+        }
+
+        if ( isset( $payload['flow_id'] ) ) {
+            $payload['flow_id'] = absint( $payload['flow_id'] );
+        }
+
+        if ( isset( $payload['webhook_variables'] ) && is_array( $payload['webhook_variables'] ) ) {
+            $payload['webhook_variables'] = $this->sanitize_payload( $payload['webhook_variables'] );
         }
 
         return $payload;

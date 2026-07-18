@@ -62,6 +62,49 @@ class Dialyra_API_Client {
     }
 
     /**
+     * Send a POST request authenticated with a business access token.
+     *
+     * @since    1.0.0
+     * @param    string    $endpoint        The API endpoint.
+     * @param    array     $body            The request body.
+     * @param    string    $access_token    Business access token.
+     * @return   Dialyra_API_Response  A structured API response object.
+     */
+    public function post_with_business_access_token( $endpoint, $body = array(), $access_token = '' ) {
+        return $this->post_with_business_access_token_to_version( 'v2', $endpoint, $body, $access_token );
+    }
+
+    /**
+     * Send a POST request to a specific API version with a business access token.
+     *
+     * @since    1.0.0
+     * @param    string    $api_version     API version.
+     * @param    string    $endpoint        The API endpoint.
+     * @param    array     $body            The request body.
+     * @param    string    $access_token    Business access token.
+     * @return   Dialyra_API_Response  A structured API response object.
+     */
+    public function post_with_business_access_token_to_version( $api_version, $endpoint, $body = array(), $access_token = '' ) {
+        $access_token = is_string( $access_token ) ? trim( $access_token ) : '';
+
+        if ( '' === $access_token ) {
+            return new Dialyra_API_Response( null, 401, esc_html__( 'Business access token missing.', 'wp-dialyra' ), 'unauthenticated' );
+        }
+
+        return $this->request(
+            'POST',
+            $this->build_versioned_url( $api_version, $endpoint ),
+            array(
+                'body'    => $body,
+                'headers' => array(
+                    'X-Dialyra-Access-Token' => $access_token,
+                ),
+            ),
+            false
+        );
+    }
+
+    /**
      * Send a multipart POST request.
      *
      * @since    1.0.0
@@ -173,6 +216,20 @@ class Dialyra_API_Client {
      */
     private function build_url( $endpoint ) {
         return trailingslashit( $this->config->get_full_base_url() ) . ltrim( $endpoint, '/' );
+    }
+
+    /**
+     * Build a full API URL for a specific API version.
+     *
+     * @since    1.0.0
+     * @param    string    $api_version    API version.
+     * @param    string    $endpoint       The API endpoint.
+     * @return   string
+     */
+    private function build_versioned_url( $api_version, $endpoint ) {
+        $base_url = trailingslashit( esc_url_raw( defined( 'DIALYRA_API_BASE_URL' ) ? DIALYRA_API_BASE_URL : 'http://127.0.0.1:5001/api' ) );
+
+        return $base_url . trim( sanitize_text_field( $api_version ), '/' ) . '/' . ltrim( $endpoint, '/' );
     }
 
     /**
