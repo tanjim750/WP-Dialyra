@@ -312,8 +312,15 @@ class Dialyra_Call_Trigger_Manager {
 		}
 
 		if ( ! $this->eligibility->has_concurrency_capacity() ) {
-			$this->debug_log_trigger( $order_id, 'queued_concurrency' );
-			$this->log_trigger_blocked( $order_id, 'concurrency_limit', $source, 'concurrency' );
+			$concurrency_context = method_exists( $this->eligibility, 'get_concurrency_context' ) ? $this->eligibility->get_concurrency_context() : array();
+			$this->debug_log_trigger(
+				$order_id,
+				'queued_concurrency',
+				array(
+					'concurrency' => $concurrency_context,
+				)
+			);
+			$this->log_trigger_blocked( $order_id, 'concurrency_limit', $source, 'concurrency', $concurrency_context );
 			$this->queue_order( $order_id, 'concurrency', $this->get_concurrency_retry_time() );
 
 			return array(

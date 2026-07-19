@@ -223,6 +223,151 @@ class Dialyra_Call_Log_Repository {
 	}
 
 	/**
+	 * Sync a local call log row from a Dialyra call-history API response.
+	 *
+	 * @since    1.0.0
+	 * @param    int      $local_log_id    Local call log row ID.
+	 * @param    array    $history         Dialyra call history response.
+	 * @return   bool
+	 */
+	public function sync_from_history_response( $local_log_id, $history ) {
+		global $wpdb;
+
+		$local_log_id = absint( $local_log_id );
+		$history      = is_array( $history ) ? $history : array();
+
+		if ( ! $local_log_id || empty( $history ) ) {
+			return false;
+		}
+
+		$template_values = is_array( $history['template_values'] ?? null ) ? $history['template_values'] : array();
+		$dtmf_sequence   = is_array( $template_values['dtmf_sequence'] ?? null ) ? $template_values['dtmf_sequence'] : array();
+		$dtmf_history    = is_array( $template_values['dtmf_history'] ?? null ) ? $template_values['dtmf_history'] : array();
+		$order_action    = sanitize_key( $template_values['order_action'] ?? 'none' );
+		$order_id        = $this->nullable_absint( $template_values['order_id'] ?? ( $history['order_id'] ?? null ) );
+
+		$row = array(
+			'id'                      => $local_log_id,
+			'business_id'             => $this->nullable_absint( $history['business_id'] ?? null ),
+			'order_id'                => $order_id,
+			'remote_call_log_id'      => $this->nullable_absint( $history['id'] ?? null ),
+			'call_session_id'         => $this->nullable_absint( $history['id'] ?? ( $template_values['call_session_id'] ?? null ) ),
+			'uuid'                    => $this->nullable_text( $history['uuid'] ?? ( $template_values['call_log_uuid'] ?? null ) ),
+			'action_id'               => $this->nullable_text( $history['action_id'] ?? ( $template_values['call_action_id'] ?? null ) ),
+			'asterisk_uniqueid'       => $this->nullable_text( $history['asterisk_uniqueid'] ?? null ),
+			'linkedid'                => $this->nullable_text( $history['linkedid'] ?? null ),
+			'sip_trunk_id'            => $this->nullable_absint( $history['sip_trunk_id'] ?? null ),
+			'flow_id'                 => $this->nullable_absint( $template_values['flow_id'] ?? null ),
+			'actor_user_id'           => $this->nullable_absint( $history['actor_user_id'] ?? null ),
+			'direction'               => $this->nullable_text( $history['direction'] ?? null ),
+			'from_number'             => $this->nullable_text( $history['from_number'] ?? null ),
+			'to_number'               => $this->nullable_text( $history['to_number'] ?? ( $history['dialed_number'] ?? null ) ),
+			'dialed_number'           => $this->nullable_text( $history['dialed_number'] ?? null ),
+			'status'                  => sanitize_key( $history['status'] ?? 'completed' ),
+			'call_status'             => $this->nullable_text( $history['call_status'] ?? null ),
+			'started_at'              => $this->nullable_datetime( $history['started_at'] ?? null ),
+			'answered_at'             => $this->nullable_datetime( $history['answered_at'] ?? null ),
+			'ended_at'                => $this->nullable_datetime( $history['ended_at'] ?? null ),
+			'duration_sec'            => absint( $history['duration_sec'] ?? 0 ),
+			'billsec'                 => absint( $history['billsec'] ?? 0 ),
+			'hangup_cause'            => $this->nullable_text( $history['hangup_cause'] ?? null ),
+			'hangup_cause_text'       => $this->nullable_text( $history['hangup_cause_text'] ?? null ),
+			'billing_status'          => $this->nullable_text( $history['billing_status'] ?? null ),
+			'billing_charged_amount'  => isset( $history['billing_charged_amount'] ) && '' !== $history['billing_charged_amount'] ? (float) $history['billing_charged_amount'] : null,
+			'dtmf'                    => ! empty( $dtmf_sequence ) ? implode( ', ', array_map( 'sanitize_text_field', $dtmf_sequence ) ) : null,
+			'timeline'                => $this->json_encode(
+				array(
+					'dtmf_events' => $dtmf_history,
+					'actions'     => is_array( $history['timeline']['actions'] ?? null ) ? $history['timeline']['actions'] : array(),
+				)
+			),
+			'metadata'                => $this->json_encode(
+				array(
+					'origin'          => 'history_sync',
+					'order_action'    => $order_action,
+					'resolved_by'     => sanitize_key( $history['resolved_by'] ?? '' ),
+					'resolved_input'  => sanitize_text_field( $history['resolved_input'] ?? '' ),
+					'template_values' => $template_values,
+					'synced_at'       => current_time( 'mysql' ),
+				)
+			),
+			'updated_at'              => current_time( 'mysql' ),
+		);
+
+		$row = $this->strip_nulls( $row );
+		unset( $row['id'] );
+
+		$updated = $wpdb->update(
+			self::get_table_name(),
+			$row,
+			array( 'id' => $local_log_id ),
+			$this->formats_for_row( $row ),
+			array( '%d' )
+		);
+
+		if ( false !== $updated && $order_id && function_exists( 'wc_get_order' ) ) {
+			$order = wc_get_order( $order_id );
+
+			if ( $order && is_object( $order ) && method_exists( $order, 'update_meta_data' ) ) {
+				$order->update_meta_data( '_dialyra_last_call_log_id', absint( $history['id'] ?? $local_log_id ) );
+				$order->update_meta_data( '_dialyra_last_call_session_id', absint( $history['id'] ?? 0 ) );
+				$order->update_meta_data( '_dialyra_last_call_status', sanitize_key( $history['status'] ?? '' ) );
+				$order->update_meta_data( '_dialyra_last_order_action', $order_action );
+				$order->save();
+			}
+		}
+
+		if ( false !== $updated && $order_id && $order_action && 'none' !== $order_action ) {
+			$this->dispatch_synced_order_action( $order_id, $order_action, $history, $template_values );
+		}
+
+		return false !== $updated;
+	}
+
+	/**
+	 * Dispatch the standard order-action hook after manual history sync.
+	 *
+	 * @since    1.0.0
+	 * @param    int       $order_id          WooCommerce order ID.
+	 * @param    string    $order_action      Dialyra order action.
+	 * @param    array     $history           Dialyra call history response.
+	 * @param    array     $template_values   Template values from history.
+	 */
+	private function dispatch_synced_order_action( $order_id, $order_action, $history, $template_values ) {
+		$dtmf_sequence = is_array( $template_values['dtmf_sequence'] ?? null ) ? $template_values['dtmf_sequence'] : array();
+
+		$event = array(
+			'event_type'             => 'call.completed',
+			'event_source'           => 'history_sync',
+			'order_id'               => absint( $order_id ),
+			'order_action'           => sanitize_key( $order_action ),
+			'business_id'            => $this->nullable_absint( $history['business_id'] ?? null ),
+			'call_log_id'            => $this->nullable_absint( $history['id'] ?? null ),
+			'call_session_id'        => $this->nullable_absint( $history['id'] ?? ( $template_values['call_session_id'] ?? null ) ),
+			'action_id'              => $this->nullable_text( $history['action_id'] ?? ( $template_values['call_action_id'] ?? null ) ),
+			'call_status'            => sanitize_key( $history['call_status'] ?? '' ),
+			'status'                 => sanitize_key( $history['status'] ?? '' ),
+			'billing_status'         => sanitize_key( $history['billing_status'] ?? '' ),
+			'billing_amount'         => isset( $history['billing_charged_amount'] ) ? (float) $history['billing_charged_amount'] : null,
+			'duration_seconds'       => absint( $history['duration_sec'] ?? 0 ),
+			'bill_seconds'           => absint( $history['billsec'] ?? 0 ),
+			'dtmf_sequence'          => array_map( 'sanitize_text_field', $dtmf_sequence ),
+			'dtmf_history'           => is_array( $template_values['dtmf_history'] ?? null ) ? $template_values['dtmf_history'] : array(),
+			'started_at'             => $this->nullable_datetime( $history['started_at'] ?? null ),
+			'answered_at'            => $this->nullable_datetime( $history['answered_at'] ?? null ),
+			'ended_at'               => $this->nullable_datetime( $history['ended_at'] ?? null ),
+			'raw_payload'            => $history,
+		);
+
+		do_action(
+			class_exists( 'Dialyra_Hook_Names' ) ? Dialyra_Hook_Names::get_or_default( 'order', 'order_action_received', 'dialyra_order_action_received' ) : 'dialyra_order_action_received',
+			absint( $order_id ),
+			sanitize_key( $order_action ),
+			$event
+		);
+	}
+
+	/**
 	 * Get table name.
 	 *
 	 * @since    1.0.0

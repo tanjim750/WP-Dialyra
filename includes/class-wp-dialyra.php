@@ -318,7 +318,9 @@ class Wp_Dialyra {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/webhooks/class-dialyra-webhook-idempotency.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/webhooks/class-dialyra-webhook-event-normalizer.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/webhooks/class-dialyra-webhook-controller.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/webhooks/class-dialyra-webhook-rest-compatibility.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/webhooks/class-dialyra-webhook-subscription-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/webhooks/class-dialyra-webhook-health-check.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/audit/class-dialyra-audit-log-repository.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/orders/class-dialyra-order-meta-manager.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/orders/class-dialyra-order-action-listener.php';
@@ -427,13 +429,16 @@ class Wp_Dialyra {
 	 */
 	private function define_webhook_hooks() {
 
-		$webhook_controller  = new Dialyra_Webhook_Controller();
+		$webhook_controller  = new Dialyra_Webhook_Controller( $this->audit_log_repository );
+		$webhook_rest_compatibility = new Dialyra_Webhook_REST_Compatibility();
 		$order_listener      = new Dialyra_Order_Action_Listener();
 		$retry_listener      = new Dialyra_Retry_Listener();
 		$retry_registrar     = new Dialyra_Retry_Registrar( $this->retry_repository );
 		$call_sync_listener  = new Dialyra_Call_Sync_Listener();
 
 		$this->loader->add_action( 'rest_api_init', $webhook_controller, 'register_routes' );
+		$this->loader->add_filter( 'rest_authentication_errors', $webhook_rest_compatibility, 'allow_webhook_route', 1 );
+		$this->loader->add_filter( 'rest_authentication_errors', $webhook_rest_compatibility, 'allow_webhook_route', PHP_INT_MAX );
 		$this->loader->add_action( Dialyra_Hook_Names::get( 'webhook', 'call_event_received' ), $this->call_log_repository, 'handle_call_event', 5 );
 		$this->loader->add_action( Dialyra_Hook_Names::get( 'webhook', 'call_event_received' ), $order_listener, 'handle_call_event' );
 		$this->loader->add_action( Dialyra_Hook_Names::get( 'webhook', 'call_event_received' ), $order_listener, 'handle_call_status_event' );

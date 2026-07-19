@@ -49,7 +49,7 @@ class Dialyra_Call_Eligibility {
 			return $this->result( false, 'order_already_cancelled', $order );
 		}
 
-		if ( in_array( sanitize_key( $order->get_meta( '_dialyra_last_call_status', true ) ), array( 'pending', 'initiated', 'ringing', 'answered' ), true ) ) {
+		if ( $this->is_recent_active_call( $order ) ) {
 			return $this->result( false, 'active_call_exists', $order );
 		}
 
@@ -63,16 +63,28 @@ class Dialyra_Call_Eligibility {
 	 * @return   bool
 	 */
 	public function has_concurrency_capacity() {
-		$max_concurrent_calls = defined( 'WP_DIALYRA_OPTION_MAX_CONCURRENT_CALLS' ) ? absint( get_option( WP_DIALYRA_OPTION_MAX_CONCURRENT_CALLS, 0 ) ) : 0;
+		$context = $this->get_concurrency_context();
 
-		if ( ! $max_concurrent_calls ) {
-			$setup = defined( 'WP_DIALYRA_OPTION_SETUP_SETTINGS' ) ? get_option( WP_DIALYRA_OPTION_SETUP_SETTINGS, array() ) : array();
-			$max_concurrent_calls = isset( $setup['call_capacity']['max_concurrent_calls'] ) ? absint( $setup['call_capacity']['max_concurrent_calls'] ) : 0;
-		}
+		return absint( $context['active_calls'] ?? 0 ) < max( 1, absint( $context['max_concurrent_calls'] ?? 1 ) );
+	}
 
-		$max_concurrent_calls = $max_concurrent_calls ? $max_concurrent_calls : ( defined( 'WP_DIALYRA_DEFAULT_MAX_CONCURRENT_CALLS' ) ? WP_DIALYRA_DEFAULT_MAX_CONCURRENT_CALLS : 1 );
+	/**
+	 * Get concurrency data for audit/debug visibility.
+	 *
+	 * @since    1.0.0
+	 * @return   array
+	 */
+	public function get_concurrency_context() {
+		$active_order_ids = $this->get_recent_active_call_order_ids();
 
-		return $this->count_active_calls() < max( 1, absint( $max_concurrent_calls ) );
+		return array(
+			'max_concurrent_calls' => $this->get_max_concurrent_calls(),
+			'active_calls'         => count( $active_order_ids ),
+			'active_order_ids'     => $active_order_ids,
+			'active_statuses'      => $this->get_active_call_statuses(),
+			'fresh_within_minutes' => $this->get_active_call_timeout_minutes(),
+			'cutoff_time'          => $this->get_active_call_cutoff_time(),
+		);
 	}
 
 	/**
@@ -116,9 +128,9 @@ class Dialyra_Call_Eligibility {
 	 * @since    1.0.0
 	 * @return   int
 	 */
-	private function count_active_calls() {
+	private function get_recent_active_call_order_ids() {
 		if ( ! function_exists( 'wc_get_orders' ) ) {
-			return 0;
+			return array();
 		}
 
 		$orders = wc_get_orders(
@@ -126,16 +138,92 @@ class Dialyra_Call_Eligibility {
 				'limit'      => -1,
 				'return'     => 'ids',
 				'meta_query' => array(
+					'relation' => 'AND',
 					array(
 						'key'     => '_dialyra_last_call_status',
-						'value'   => array( 'pending', 'initiated', 'ringing', 'answered' ),
+						'value'   => $this->get_active_call_statuses(),
 						'compare' => 'IN',
+					),
+					array(
+						'key'     => '_dialyra_last_call_at',
+						'value'   => $this->get_active_call_cutoff_time(),
+						'compare' => '>=',
+						'type'    => 'DATETIME',
 					),
 				),
 			)
 		);
 
-		return is_array( $orders ) ? count( $orders ) : 0;
+		return array_values( array_map( 'absint', is_array( $orders ) ? $orders : array() ) );
+	}
+
+	/**
+	 * Determine whether an order has a fresh active call marker.
+	 *
+	 * @since    1.0.0
+	 * @param    WC_Order    $order    WooCommerce order.
+	 * @return   bool
+	 */
+	private function is_recent_active_call( $order ) {
+		$status = sanitize_key( is_object( $order ) && method_exists( $order, 'get_meta' ) ? $order->get_meta( '_dialyra_last_call_status', true ) : '' );
+
+		if ( ! in_array( $status, $this->get_active_call_statuses(), true ) ) {
+			return false;
+		}
+
+		$last_call_at = is_object( $order ) && method_exists( $order, 'get_meta' ) ? sanitize_text_field( $order->get_meta( '_dialyra_last_call_at', true ) ) : '';
+		$last_call_ts = $last_call_at ? strtotime( $last_call_at ) : 0;
+
+		return $last_call_ts && $last_call_ts >= strtotime( $this->get_active_call_cutoff_time() );
+	}
+
+	/**
+	 * Get max concurrent call setting.
+	 *
+	 * @since    1.0.0
+	 * @return   int
+	 */
+	private function get_max_concurrent_calls() {
+		$max_concurrent_calls = defined( 'WP_DIALYRA_OPTION_MAX_CONCURRENT_CALLS' ) ? absint( get_option( WP_DIALYRA_OPTION_MAX_CONCURRENT_CALLS, 0 ) ) : 0;
+
+		if ( ! $max_concurrent_calls ) {
+			$setup = defined( 'WP_DIALYRA_OPTION_SETUP_SETTINGS' ) ? get_option( WP_DIALYRA_OPTION_SETUP_SETTINGS, array() ) : array();
+			$max_concurrent_calls = isset( $setup['call_capacity']['max_concurrent_calls'] ) ? absint( $setup['call_capacity']['max_concurrent_calls'] ) : 0;
+		}
+
+		$max_concurrent_calls = $max_concurrent_calls ? $max_concurrent_calls : ( defined( 'WP_DIALYRA_DEFAULT_MAX_CONCURRENT_CALLS' ) ? WP_DIALYRA_DEFAULT_MAX_CONCURRENT_CALLS : 1 );
+
+		return max( 1, absint( $max_concurrent_calls ) );
+	}
+
+	/**
+	 * Get active call statuses used for concurrency.
+	 *
+	 * @since    1.0.0
+	 * @return   array
+	 */
+	private function get_active_call_statuses() {
+		return array( 'initiated', 'ringing', 'answered' );
+	}
+
+	/**
+	 * Get active call freshness timeout.
+	 *
+	 * @since    1.0.0
+	 * @return   int
+	 */
+	private function get_active_call_timeout_minutes() {
+		return defined( 'WP_DIALYRA_ACTIVE_CALL_TIMEOUT_MINUTES' ) ? max( 1, absint( WP_DIALYRA_ACTIVE_CALL_TIMEOUT_MINUTES ) ) : 30;
+	}
+
+	/**
+	 * Get cutoff time for active call freshness.
+	 *
+	 * @since    1.0.0
+	 * @return   string
+	 */
+	private function get_active_call_cutoff_time() {
+		return date( 'Y-m-d H:i:s', current_time( 'timestamp' ) - ( $this->get_active_call_timeout_minutes() * MINUTE_IN_SECONDS ) );
 	}
 
 	/**

@@ -109,6 +109,10 @@ if ( ! defined( 'WP_DIALYRA_OPTION_BUSINESS_WEBHOOK_CREDENTIALS' ) ) {
 	define( 'WP_DIALYRA_OPTION_BUSINESS_WEBHOOK_CREDENTIALS', 'dialyra_business_webhook_credentials' );
 }
 
+if ( ! defined( 'WP_DIALYRA_OPTION_WEBHOOK_HEALTH' ) ) {
+	define( 'WP_DIALYRA_OPTION_WEBHOOK_HEALTH', 'dialyra_webhook_health' );
+}
+
 if ( ! defined( 'WP_DIALYRA_OPTION_WEBHOOK_EVENTS_TABLE_VERSION' ) ) {
 	define( 'WP_DIALYRA_OPTION_WEBHOOK_EVENTS_TABLE_VERSION', 'dialyra_webhook_events_table_version' );
 }
@@ -171,6 +175,10 @@ if ( ! defined( 'WP_DIALYRA_DEFAULT_BUSINESS_HOURS_CLOSE_TIME' ) ) {
 
 if ( ! defined( 'WP_DIALYRA_DEFAULT_MAX_CONCURRENT_CALLS' ) ) {
 	define( 'WP_DIALYRA_DEFAULT_MAX_CONCURRENT_CALLS', 1 );
+}
+
+if ( ! defined( 'WP_DIALYRA_ACTIVE_CALL_TIMEOUT_MINUTES' ) ) {
+	define( 'WP_DIALYRA_ACTIVE_CALL_TIMEOUT_MINUTES', 30 );
 }
 
 if ( ! defined( 'WP_DIALYRA_DEFAULT_RETRY_MAX_ATTEMPTS' ) ) {

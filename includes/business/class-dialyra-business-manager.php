@@ -477,7 +477,14 @@ class Dialyra_Business_Manager {
 			return false;
 		}
 
-		return $this->webhook_subscription_manager->reconcile_for_business( $business_id );
+		$result = $this->webhook_subscription_manager->reconcile_for_business( $business_id );
+
+		if ( is_array( $result ) && ! empty( $result['success'] ) && class_exists( 'Dialyra_Webhook_Health_Check' ) ) {
+			$health_check      = new Dialyra_Webhook_Health_Check( $this->api_endpoints );
+			$result['health'] = $health_check->check( $result['webhook'] ?? null );
+		}
+
+		return $result;
 	}
 
 	/**

@@ -509,6 +509,25 @@ class Dialyra_API_Endpoints {
         return $this->client->post_with_business_access_token_to_version( 'v3', 'runtime/calls/originate', $this->sanitize_call_originate_payload( $payload ), $access_token );
     }
 
+    /**
+     * Get a single call history record.
+     *
+     * @since    1.0.0
+     * @param    int|null    $call_id       Optional legacy call log ID path value.
+     * @param    array       $query_params  Optional selector query params.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function get_call_history( $call_id = null, $query_params = array() ) {
+        $query_params = $this->sanitize_payload( $query_params );
+        $endpoint     = 'calls/history';
+
+        if ( ! empty( $query_params ) ) {
+            return $this->client->get( $endpoint, $query_params );
+        }
+
+        return $this->client->get( $endpoint . '/' . absint( $call_id ) );
+    }
+
     // Agents
 
     /**

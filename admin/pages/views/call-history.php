@@ -15,6 +15,7 @@ global $wpdb;
 
 $wp_dialyra_business_id  = class_exists( 'Dialyra_Auth_Manager' ) ? absint( Dialyra_Auth_Manager::get_business_id() ) : 0;
 $wp_dialyra_notice_error = '';
+$wp_dialyra_notice_success = '';
 $wp_dialyra_calls        = array();
 $wp_dialyra_log_table    = $wpdb->prefix . 'dialyra_call_logs';
 
@@ -124,6 +125,33 @@ $wp_dialyra_get_nested_value = static function ( $data, $keys, $default = '' ) {
 	}
 
 	return $default;
+};
+
+$wp_dialyra_extract_response_data = static function ( $response ) {
+	if ( ! $response || ! is_object( $response ) || ! method_exists( $response, 'get_data' ) ) {
+		return array();
+	}
+
+	$data = $response->get_data();
+	$data = is_array( $data ) ? $data : array();
+
+	if ( isset( $data['data'] ) && is_array( $data['data'] ) ) {
+		$data = $data['data'];
+	}
+
+	return $data;
+};
+
+$wp_dialyra_get_local_log = static function ( $log_id ) use ( $wpdb, $wp_dialyra_log_table ) {
+	$log_id = absint( $log_id );
+
+	if ( ! $log_id ) {
+		return array();
+	}
+
+	$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM {$wp_dialyra_log_table} WHERE id = %d LIMIT 1", $log_id ), ARRAY_A );
+
+	return is_array( $row ) ? $row : array();
 };
 
 $wp_dialyra_find_order_for_log = static function ( $log ) {
@@ -252,8 +280,12 @@ $wp_dialyra_get_log_rows = static function ( $table_name, $columns, $filters, $b
 		}
 	}
 
-	$order_column = $wp_dialyra_first_column( $columns, array( 'started_at', 'created_at', 'updated_at', 'id' ) );
-	$order_by     = $order_column ? "{$order_column} DESC" : 'id DESC';
+	$order_by = $wp_dialyra_has_column( $columns, 'updated_at' ) ? 'updated_at DESC' : 'id DESC';
+
+	if ( $wp_dialyra_has_column( $columns, 'id' ) ) {
+		$order_by .= ', id DESC';
+	}
+
 	$sql          = "SELECT * FROM {$table_name} WHERE " . implode( ' AND ', $where ) . " ORDER BY {$order_by} LIMIT 100";
 
 	if ( ! empty( $params ) ) {
@@ -302,7 +334,17 @@ $wp_dialyra_normalize_log = static function ( $row, $retry_counts ) use ( $wp_di
 		foreach ( $dtmf_events as $event ) {
 			if ( is_array( $event ) && isset( $event['digits'] ) && '' !== $event['digits'] ) {
 				$digits[] = sanitize_text_field( $event['digits'] );
+			} elseif ( is_array( $event ) && isset( $event['value'] ) && '' !== $event['value'] ) {
+				$digits[] = sanitize_text_field( $event['value'] );
 			}
+		}
+	}
+
+	if ( empty( $digits ) ) {
+		$template_dtmf_sequence = $wp_dialyra_get_nested_value( $metadata, array( 'template_values.dtmf_sequence' ), array() );
+
+		if ( is_array( $template_dtmf_sequence ) ) {
+			$digits = array_values( array_filter( array_map( 'sanitize_text_field', $template_dtmf_sequence ) ) );
 		}
 	}
 
@@ -312,6 +354,7 @@ $wp_dialyra_normalize_log = static function ( $row, $retry_counts ) use ( $wp_di
 	$number     = sanitize_text_field( $wp_dialyra_row_value( $row, array( 'to_number', 'dialed_number', 'phone' ), $billing_phone ) );
 
 	return array(
+		'local_log_id'    => absint( $wp_dialyra_row_value( $row, array( 'id' ), 0 ) ),
 		'order_id'       => $order_id,
 		'customer_name'  => $customer_name ? sanitize_text_field( $customer_name ) : __( 'Unknown customer', 'wp-dialyra' ),
 		'flow_name'      => $flow_id ? sprintf( __( 'Flow #%d', 'wp-dialyra' ), $flow_id ) : __( 'Dialyra flow', 'wp-dialyra' ),
@@ -322,7 +365,7 @@ $wp_dialyra_normalize_log = static function ( $row, $retry_counts ) use ( $wp_di
 		'billsec'        => $wp_dialyra_format_duration( $wp_dialyra_row_value( $row, array( 'billsec', 'bill_seconds' ), 0 ) ),
 		'cost'           => $wp_dialyra_format_money( $wp_dialyra_row_value( $row, array( 'billing_charged_amount', 'cost' ), null ) ),
 		'billing_status' => sanitize_text_field( $wp_dialyra_row_value( $row, array( 'billing_status', 'billing_clear_reason' ), '—' ) ),
-		'dtmf'           => $digits ? implode( ', ', array_unique( $digits ) ) : sanitize_text_field( $wp_dialyra_get_nested_value( $metadata, array( 'dtmf', 'dtmf_value' ), '—' ) ),
+		'dtmf'           => $digits ? implode( ', ', array_unique( $digits ) ) : sanitize_text_field( $wp_dialyra_row_value( $row, array( 'dtmf' ), $wp_dialyra_get_nested_value( $metadata, array( 'dtmf', 'dtmf_value', 'template_values.dtmf_value' ), '—' ) ) ),
 		'dtmf_meta'      => $digits ? sprintf( _n( '%d event', '%d events', count( $digits ), 'wp-dialyra' ), count( $digits ) ) : __( 'none', 'wp-dialyra' ),
 		'from_number'    => sanitize_text_field( $wp_dialyra_row_value( $row, array( 'from_number' ), '—' ) ),
 		'sip_trunk_id'   => absint( $wp_dialyra_row_value( $row, array( 'sip_trunk_id' ), 0 ) ),
@@ -393,6 +436,55 @@ if ( ! $wp_dialyra_table_exists( $wp_dialyra_log_table ) ) {
 	);
 } else {
 	$wp_dialyra_log_columns = $wp_dialyra_get_table_columns( $wp_dialyra_log_table );
+
+	if ( isset( $_POST['wp_dialyra_call_history_action'] ) && 'sync_call' === sanitize_key( wp_unslash( $_POST['wp_dialyra_call_history_action'] ) ) ) {
+		if ( ! isset( $_POST['wp_dialyra_call_history_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['wp_dialyra_call_history_nonce'] ) ), 'wp-dialyra-call-history-sync' ) ) {
+			$wp_dialyra_notice_error = __( 'Call sync could not run because the security check failed.', 'wp-dialyra' );
+		} else {
+			$wp_dialyra_sync_log_id = isset( $_POST['dialyra_local_log_id'] ) ? absint( wp_unslash( $_POST['dialyra_local_log_id'] ) ) : 0;
+			$wp_dialyra_sync_log    = $wp_dialyra_get_local_log( $wp_dialyra_sync_log_id );
+
+			if ( empty( $wp_dialyra_sync_log ) ) {
+				$wp_dialyra_notice_error = __( 'Local call log row was not found.', 'wp-dialyra' );
+			} else {
+				$wp_dialyra_plugin        = class_exists( 'Wp_Dialyra' ) ? Wp_Dialyra::get_instance() : null;
+				$wp_dialyra_api_endpoints = $wp_dialyra_plugin ? $wp_dialyra_plugin->get_api_endpoints() : null;
+				$wp_dialyra_query         = array();
+				$wp_dialyra_path_id       = 0;
+
+				if ( ! empty( $wp_dialyra_sync_log['action_id'] ) ) {
+					$wp_dialyra_query['action_id'] = sanitize_text_field( $wp_dialyra_sync_log['action_id'] );
+				} elseif ( ! empty( $wp_dialyra_sync_log['call_session_id'] ) ) {
+					$wp_dialyra_query['call_session_id'] = absint( $wp_dialyra_sync_log['call_session_id'] );
+				} elseif ( ! empty( $wp_dialyra_sync_log['remote_call_log_id'] ) ) {
+					$wp_dialyra_path_id = absint( $wp_dialyra_sync_log['remote_call_log_id'] );
+				}
+
+				if ( ! $wp_dialyra_api_endpoints || ! method_exists( $wp_dialyra_api_endpoints, 'get_call_history' ) ) {
+					$wp_dialyra_notice_error = __( 'Dialyra API service is not available.', 'wp-dialyra' );
+				} elseif ( empty( $wp_dialyra_query ) && ! $wp_dialyra_path_id ) {
+					$wp_dialyra_notice_error = __( 'This local call log has no action ID, call session ID, or remote call log ID to sync from Dialyra.', 'wp-dialyra' );
+				} else {
+					$wp_dialyra_history_response = $wp_dialyra_api_endpoints->get_call_history( $wp_dialyra_path_id, $wp_dialyra_query );
+
+					if ( ! $wp_dialyra_history_response || ! $wp_dialyra_history_response->is_successful() ) {
+						$wp_dialyra_notice_error = $wp_dialyra_history_response ? $wp_dialyra_history_response->get_message() : __( 'Dialyra call history could not be fetched.', 'wp-dialyra' );
+					} else {
+						$wp_dialyra_history_data = $wp_dialyra_extract_response_data( $wp_dialyra_history_response );
+						$wp_dialyra_repository   = class_exists( 'Dialyra_Call_Log_Repository' ) ? new Dialyra_Call_Log_Repository() : null;
+						$wp_dialyra_synced       = $wp_dialyra_repository ? $wp_dialyra_repository->sync_from_history_response( $wp_dialyra_sync_log_id, $wp_dialyra_history_data ) : false;
+
+						if ( $wp_dialyra_synced ) {
+							$wp_dialyra_notice_success = __( 'Call log synced from Dialyra history.', 'wp-dialyra' );
+						} else {
+							$wp_dialyra_notice_error = __( 'Call history was fetched, but the local row could not be updated.', 'wp-dialyra' );
+						}
+					}
+				}
+			}
+		}
+	}
+
 	$wp_dialyra_log_rows    = $wp_dialyra_get_log_rows( $wp_dialyra_log_table, $wp_dialyra_log_columns, $wp_dialyra_filters, $wp_dialyra_business_id );
 	$wp_dialyra_order_ids   = array();
 
@@ -429,6 +521,12 @@ $wp_dialyra_statuses = array( 'completed', 'failed', 'busy', 'no_answer', 'cance
 	<?php if ( $wp_dialyra_notice_error ) : ?>
 		<div class="wp-dialyra-notice wp-dialyra-notice--error">
 			<strong><?php echo esc_html( $wp_dialyra_notice_error ); ?></strong>
+		</div>
+	<?php endif; ?>
+
+	<?php if ( $wp_dialyra_notice_success ) : ?>
+		<div class="wp-dialyra-notice wp-dialyra-notice--success">
+			<strong><?php echo esc_html( $wp_dialyra_notice_success ); ?></strong>
 		</div>
 	<?php endif; ?>
 
@@ -516,6 +614,7 @@ $wp_dialyra_statuses = array( 'completed', 'failed', 'busy', 'no_answer', 'cance
 					<span><?php esc_html_e( 'From number', 'wp-dialyra' ); ?></span>
 					<span><?php esc_html_e( 'Retries', 'wp-dialyra' ); ?></span>
 					<span><?php esc_html_e( 'Started time', 'wp-dialyra' ); ?></span>
+					<span><?php esc_html_e( 'Actions', 'wp-dialyra' ); ?></span>
 				</div>
 
 				<?php foreach ( $wp_dialyra_calls as $call ) : ?>
@@ -538,6 +637,16 @@ $wp_dialyra_statuses = array( 'completed', 'failed', 'busy', 'no_answer', 'cance
 						<span><code><?php echo esc_html( $call['from_number'] ); ?></code><small><?php echo $call['sip_trunk_id'] ? esc_html( sprintf( __( 'trunk %d', 'wp-dialyra' ), $call['sip_trunk_id'] ) ) : esc_html__( 'no trunk', 'wp-dialyra' ); ?></small></span>
 						<span><strong><?php echo esc_html( $call['retries'] ); ?></strong><small><?php esc_html_e( 'local retry records', 'wp-dialyra' ); ?></small></span>
 						<span><strong><?php echo esc_html( $call['started_at'] ); ?></strong><small><?php echo esc_html( $call['hangup_cause'] ); ?></small></span>
+						<span>
+							<form class="wp-dialyra-call-sync-form" method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=call-history' ) ); ?>">
+								<?php wp_nonce_field( 'wp-dialyra-call-history-sync', 'wp_dialyra_call_history_nonce' ); ?>
+								<input type="hidden" name="wp_dialyra_call_history_action" value="sync_call">
+								<input type="hidden" name="dialyra_local_log_id" value="<?php echo esc_attr( $call['local_log_id'] ); ?>">
+								<button class="wp-dialyra-icon-button wp-dialyra-call-sync-button" type="submit" title="<?php esc_attr_e( 'Sync from Dialyra', 'wp-dialyra' ); ?>" aria-label="<?php esc_attr_e( 'Sync call from Dialyra', 'wp-dialyra' ); ?>">
+									<span class="dashicons dashicons-update" aria-hidden="true"></span>
+								</button>
+							</form>
+						</span>
 					</div>
 				<?php endforeach; ?>
 			</div>
