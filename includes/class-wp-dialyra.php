@@ -139,6 +139,15 @@ class Wp_Dialyra {
 	protected $call_log_repository;
 
 	/**
+	 * The Dialyra local audit log repository.
+	 *
+	 * @since    1.0.0
+	 * @access   protected
+	 * @var      Dialyra_Audit_Log_Repository
+	 */
+	protected $audit_log_repository;
+
+	/**
 	 * The Dialyra call trigger manager.
 	 *
 	 * @since    1.0.0
@@ -226,13 +235,15 @@ class Wp_Dialyra {
 		$this->business_manager = new Dialyra_Business_Manager( $this->api_client, $this->api_endpoints );
 		$this->flow_manager     = new Dialyra_Flow_Manager( $this->api_endpoints );
 		$this->flow_product_assignment_manager = new Dialyra_Flow_Product_Assignment_Manager();
+		$this->audit_log_repository = new Dialyra_Audit_Log_Repository();
 		$this->call_log_repository = new Dialyra_Call_Log_Repository();
 		$this->call_originate_service = new Dialyra_Call_Originate_Service(
 			$this->api_endpoints,
 			$this->business_manager,
 			new Dialyra_Flow_Resolver( $this->flow_manager, $this->flow_product_assignment_manager ),
 			new Dialyra_Call_Request_Builder(),
-			$this->call_log_repository
+			$this->call_log_repository,
+			$this->audit_log_repository
 		);
 
 		$call_queue_repository = new Dialyra_Call_Queue_Repository();
@@ -253,7 +264,9 @@ class Wp_Dialyra {
 			$business_hours,
 			$this->call_originate_service,
 			$this->flow_manager,
-			$this->flow_product_assignment_manager
+			$this->flow_product_assignment_manager,
+			$this->call_log_repository,
+			$this->audit_log_repository
 		);
 
 		$this->retry_queue_processor = new Dialyra_Retry_Queue_Processor(
@@ -306,6 +319,7 @@ class Wp_Dialyra {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/webhooks/class-dialyra-webhook-event-normalizer.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/webhooks/class-dialyra-webhook-controller.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/webhooks/class-dialyra-webhook-subscription-manager.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/audit/class-dialyra-audit-log-repository.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/orders/class-dialyra-order-meta-manager.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/orders/class-dialyra-order-action-listener.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/calls/class-dialyra-call-request-builder.php';
@@ -452,7 +466,7 @@ class Wp_Dialyra {
 	 */
 	private function define_entrypoint_hooks() {
 
-		$woocommerce_entrypoints = new Dialyra_WooCommerce_Entrypoints();
+		$woocommerce_entrypoints = new Dialyra_WooCommerce_Entrypoints( $this->audit_log_repository );
 		$scheduler_entrypoints   = new Dialyra_Scheduler_Entrypoints( $this->call_queue_processor, $this->retry_queue_processor );
 
 		$this->loader->add_action( 'woocommerce_new_order', $woocommerce_entrypoints, 'handle_new_order', 20, 2 );
@@ -478,15 +492,18 @@ class Wp_Dialyra {
 	/**
 	 * Log whether Dialyra entrypoint hooks are registered.
 	 *
-	 * This runs only when WP_DEBUG is enabled and helps verify hook wiring on a
-	 * live WooCommerce site without changing normal plugin behavior.
-	 *
 	 * @since    1.0.0
 	 */
 	public function debug_entrypoint_hook_registration() {
-		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+		if ( ! $this->audit_log_repository || ! method_exists( $this->audit_log_repository, 'log' ) ) {
 			return;
 		}
+
+		if ( get_transient( 'wp_dialyra_entrypoint_hook_audit_logged' ) ) {
+			return;
+		}
+
+		set_transient( 'wp_dialyra_entrypoint_hook_audit_logged', 1, 5 * MINUTE_IN_SECONDS );
 
 		$hooks = array(
 			'woocommerce_new_order',
@@ -503,12 +520,15 @@ class Wp_Dialyra {
 		);
 
 		foreach ( $hooks as $hook_name ) {
-			error_log(
-				sprintf(
-					'WP Dialyra: hook audit [%s] registered=%s',
-					sanitize_key( $hook_name ),
-					has_action( $hook_name ) ? 'yes' : 'no'
-				)
+			$this->audit_log_repository->log(
+				'entrypoint_hook_registration',
+				sprintf( 'Hook registration checked: %s', sanitize_key( $hook_name ) ),
+				array(
+					'hook_name'  => sanitize_key( $hook_name ),
+					'registered' => (bool) has_action( $hook_name ),
+				),
+				has_action( $hook_name ) ? 'info' : 'warning',
+				'entrypoint'
 			);
 		}
 	}

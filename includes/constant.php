@@ -97,6 +97,10 @@ if ( ! defined( 'WP_DIALYRA_OPTION_CALL_LOGS_TABLE_VERSION' ) ) {
 	define( 'WP_DIALYRA_OPTION_CALL_LOGS_TABLE_VERSION', 'dialyra_call_logs_table_version' );
 }
 
+if ( ! defined( 'WP_DIALYRA_OPTION_AUDIT_LOGS_TABLE_VERSION' ) ) {
+	define( 'WP_DIALYRA_OPTION_AUDIT_LOGS_TABLE_VERSION', 'dialyra_audit_logs_table_version' );
+}
+
 if ( ! defined( 'WP_DIALYRA_OPTION_BUSINESS_WEBHOOK_DATA' ) ) {
 	define( 'WP_DIALYRA_OPTION_BUSINESS_WEBHOOK_DATA', 'dialyra_business_webhook_data' );
 }

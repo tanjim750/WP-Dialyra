@@ -131,6 +131,37 @@ class Dialyra_Call_Log_Repository {
 	}
 
 	/**
+	 * Log why an automatic call candidate did not reach the originate API.
+	 *
+	 * @since    1.0.0
+	 * @param    int       $order_id       WooCommerce order ID.
+	 * @param    string    $reason         Block reason.
+	 * @param    array     $context        Optional context.
+	 * @return   int
+	 */
+	public function log_trigger_blocked( $order_id, $reason, $context = array() ) {
+		$context     = is_array( $context ) ? $context : array();
+		$business_id = $this->nullable_absint( $context['business_id'] ?? ( class_exists( 'Dialyra_Auth_Manager' ) ? Dialyra_Auth_Manager::get_business_id() : null ) );
+
+		$row = array(
+			'business_id' => $business_id,
+			'order_id'    => $this->nullable_absint( $order_id ),
+			'status'      => 'trigger_blocked',
+			'started_at'  => current_time( 'mysql' ),
+			'metadata'    => $this->json_encode(
+				array(
+					'origin' => sanitize_key( $context['source'] ?? 'automatic_trigger' ),
+					'reason' => sanitize_key( $reason ),
+					'gate'   => sanitize_key( $context['gate'] ?? 'pre_originate' ),
+					'data'   => is_array( $context['data'] ?? null ) ? $context['data'] : array(),
+				)
+			),
+		);
+
+		return $this->upsert( $row );
+	}
+
+	/**
 	 * Handle normalized webhook event.
 	 *
 	 * @since    1.0.0

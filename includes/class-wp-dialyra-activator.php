@@ -35,6 +35,7 @@ class Wp_Dialyra_Activator {
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/events/class-dialyra-hook-names.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/flow/class-dialyra-flow-product-assignment-manager.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/webhooks/class-dialyra-webhook-idempotency.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/audit/class-dialyra-audit-log-repository.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/calls/class-dialyra-call-log-repository.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/triggers/class-dialyra-call-queue-repository.php';
 		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/retries/class-dialyra-retry-repository.php';
@@ -42,6 +43,7 @@ class Wp_Dialyra_Activator {
 
 		Dialyra_Flow_Product_Assignment_Manager::install_table();
 		Dialyra_Webhook_Idempotency::install_table();
+		Dialyra_Audit_Log_Repository::install_table();
 		Dialyra_Call_Log_Repository::install_table();
 		Dialyra_Call_Queue_Repository::install_table();
 		Dialyra_Retry_Repository::install_table();

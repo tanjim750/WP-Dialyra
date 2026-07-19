@@ -22,6 +22,7 @@ $wp_dialyra_pages = array(
 	'flow-preview' => 'flow-preview.php',
 	'flows'      => 'flows.php',
 	'login'     => 'login.php',
+	'logs'      => 'logs.php',
 	'queue-calls' => 'queue-calls.php',
 	'settings'  => 'settings.php',
 	'setup'     => 'setup.php',

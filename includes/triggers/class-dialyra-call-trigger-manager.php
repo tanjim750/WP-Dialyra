@@ -77,6 +77,24 @@ class Dialyra_Call_Trigger_Manager {
 	private $product_assignment_manager;
 
 	/**
+	 * Local call log repository.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 * @var      Dialyra_Call_Log_Repository|null
+	 */
+	private $call_log_repository;
+
+	/**
+	 * Audit log repository.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 * @var      Dialyra_Audit_Log_Repository|null
+	 */
+	private $audit_log_repository;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since    1.0.0
@@ -87,8 +105,10 @@ class Dialyra_Call_Trigger_Manager {
 	 * @param    Dialyra_Call_Originate_Service  $call_originate_service   Call originate service.
 	 * @param    Dialyra_Flow_Manager|null       $flow_manager             Optional flow manager.
 	 * @param    Dialyra_Flow_Product_Assignment_Manager|null $product_assignment_manager Optional product assignment manager.
+	 * @param    Dialyra_Call_Log_Repository|null $call_log_repository Optional call log repository.
+	 * @param    Dialyra_Audit_Log_Repository|null $audit_log_repository Optional audit log repository.
 	 */
-	public function __construct( $business_manager, $queue_repository, $eligibility, $business_hours, $call_originate_service, $flow_manager = null, $product_assignment_manager = null ) {
+	public function __construct( $business_manager, $queue_repository, $eligibility, $business_hours, $call_originate_service, $flow_manager = null, $product_assignment_manager = null, $call_log_repository = null, $audit_log_repository = null ) {
 		$this->business_manager            = $business_manager;
 		$this->queue_repository            = $queue_repository;
 		$this->eligibility                 = $eligibility;
@@ -96,6 +116,8 @@ class Dialyra_Call_Trigger_Manager {
 		$this->call_originate_service      = $call_originate_service;
 		$this->flow_manager                = $flow_manager;
 		$this->product_assignment_manager  = $product_assignment_manager;
+		$this->call_log_repository         = $call_log_repository;
+		$this->audit_log_repository        = $audit_log_repository;
 	}
 
 	/**
@@ -225,6 +247,7 @@ class Dialyra_Call_Trigger_Manager {
 
 		if ( ! $order_id ) {
 			$this->debug_log_trigger( $order_id, 'blocked_invalid_order_id' );
+			$this->log_trigger_blocked( $order_id, 'invalid_order_id', $source, 'order' );
 			return array(
 				'success' => false,
 				'reason'  => 'invalid_order_id',
@@ -235,6 +258,12 @@ class Dialyra_Call_Trigger_Manager {
 
 		if ( empty( $eligibility['eligible'] ) ) {
 			$this->debug_log_trigger( $order_id, 'blocked_eligibility', array( 'reason' => $eligibility['reason'] ?? '' ) );
+			$this->log_trigger_blocked(
+				$order_id,
+				$eligibility['reason'] ?? 'not_eligible',
+				$source,
+				'eligibility'
+			);
 
 			if ( 'active_call_exists' === ( $eligibility['reason'] ?? '' ) ) {
 				return $eligibility;
@@ -245,6 +274,7 @@ class Dialyra_Call_Trigger_Manager {
 
 		if ( ! $this->business_hours->is_calling_allowed_now() ) {
 			$this->debug_log_trigger( $order_id, 'queued_business_hours' );
+			$this->log_trigger_blocked( $order_id, 'outside_business_hours', $source, 'business_hours' );
 			$this->queue_order( $order_id, 'business_hours', $this->business_hours->get_next_valid_call_time() );
 
 			return array(
@@ -255,6 +285,7 @@ class Dialyra_Call_Trigger_Manager {
 
 		if ( ! $this->eligibility->has_concurrency_capacity() ) {
 			$this->debug_log_trigger( $order_id, 'queued_concurrency' );
+			$this->log_trigger_blocked( $order_id, 'concurrency_limit', $source, 'concurrency' );
 			$this->queue_order( $order_id, 'concurrency', $this->get_concurrency_retry_time() );
 
 			return array(
@@ -269,6 +300,32 @@ class Dialyra_Call_Trigger_Manager {
 			$order_id,
 			array(
 				'source' => $source,
+			)
+		);
+	}
+
+	/**
+	 * Persist a local diagnostic row when an automatic trigger stops before API.
+	 *
+	 * @since    1.0.0
+	 * @param    int       $order_id    WooCommerce order ID.
+	 * @param    string    $reason      Block reason.
+	 * @param    string    $source      Trigger source.
+	 * @param    string    $gate        Gate name.
+	 * @return   void
+	 */
+	private function log_trigger_blocked( $order_id, $reason, $source, $gate ) {
+		if ( ! $this->call_log_repository || ! method_exists( $this->call_log_repository, 'log_trigger_blocked' ) ) {
+			return;
+		}
+
+		$this->call_log_repository->log_trigger_blocked(
+			$order_id,
+			$reason,
+			array(
+				'business_id' => $this->business_manager && method_exists( $this->business_manager, 'get_connected_business_id' ) ? $this->business_manager->get_connected_business_id() : 0,
+				'source'      => $source,
+				'gate'        => $gate,
 			)
 		);
 	}
@@ -540,7 +597,7 @@ class Dialyra_Call_Trigger_Manager {
 	}
 
 	/**
-	 * Log trigger decisions while WordPress debug mode is enabled.
+	 * Log trigger decisions into the plugin audit table.
 	 *
 	 * @since    1.0.0
 	 * @param    int       $order_id    WooCommerce order ID.
@@ -548,19 +605,21 @@ class Dialyra_Call_Trigger_Manager {
 	 * @param    array     $context     Optional context.
 	 */
 	private function debug_log_trigger( $order_id, $event, $context = array() ) {
-		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+		if ( ! $this->audit_log_repository || ! method_exists( $this->audit_log_repository, 'log' ) ) {
 			return;
 		}
 
 		$context = is_array( $context ) ? $context : array();
+		$level   = false === strpos( sanitize_key( $event ), 'blocked' ) ? 'info' : 'warning';
 
-		error_log(
-			sprintf(
-				'WP Dialyra: trigger [%s] order #%d context=%s',
-				sanitize_key( $event ),
-				absint( $order_id ),
-				wp_json_encode( $context )
-			)
+		$context['order_id'] = absint( $order_id );
+
+		$this->audit_log_repository->log(
+			sanitize_key( $event ),
+			sprintf( 'Automatic call trigger: %s', sanitize_key( $event ) ),
+			$context,
+			$level,
+			'trigger'
 		);
 	}
 }

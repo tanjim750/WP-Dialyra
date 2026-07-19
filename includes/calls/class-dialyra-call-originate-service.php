@@ -59,6 +59,15 @@ class Dialyra_Call_Originate_Service {
 	private $call_log_repository;
 
 	/**
+	 * Audit log repository.
+	 *
+	 * @since    1.0.0
+	 * @access   private
+	 * @var      Dialyra_Audit_Log_Repository|null
+	 */
+	private $audit_log_repository;
+
+	/**
 	 * Constructor.
 	 *
 	 * @since    1.0.0
@@ -67,13 +76,15 @@ class Dialyra_Call_Originate_Service {
 	 * @param    Dialyra_Flow_Resolver          $flow_resolver      Flow resolver.
 	 * @param    Dialyra_Call_Request_Builder   $request_builder    Request builder.
 	 * @param    Dialyra_Call_Log_Repository|null $call_log_repository Local call log repository.
+	 * @param    Dialyra_Audit_Log_Repository|null $audit_log_repository Local audit log repository.
 	 */
-	public function __construct( Dialyra_API_Endpoints $api_endpoints, Dialyra_Business_Manager $business_manager, Dialyra_Flow_Resolver $flow_resolver, Dialyra_Call_Request_Builder $request_builder, $call_log_repository = null ) {
+	public function __construct( Dialyra_API_Endpoints $api_endpoints, Dialyra_Business_Manager $business_manager, Dialyra_Flow_Resolver $flow_resolver, Dialyra_Call_Request_Builder $request_builder, $call_log_repository = null, $audit_log_repository = null ) {
 		$this->api_endpoints    = $api_endpoints;
 		$this->business_manager = $business_manager;
 		$this->flow_resolver    = $flow_resolver;
 		$this->request_builder  = $request_builder;
 		$this->call_log_repository = $call_log_repository;
+		$this->audit_log_repository = $audit_log_repository;
 	}
 
 	/**
@@ -136,10 +147,12 @@ class Dialyra_Call_Originate_Service {
 			'phone'       => sanitize_text_field( $request_result['payload']['phone'] ?? '' ),
 			'source'      => sanitize_key( $origin_context['source'] ?? 'originate' ),
 		);
+		$this->audit_originate( 'originate_api_called', $order_id, 'Dialyra originate API was called.', array_merge( $log_context, array( 'status_code' => $response instanceof Dialyra_API_Response ? absint( $response->get_status_code() ) : 0 ) ), 'info' );
 
 		if ( $response && $response->is_successful() ) {
 			$this->save_success_meta( $order, $response );
 			$this->log_originate_result( $order_id, $response, $log_context );
+			$this->audit_originate( 'originate_success', $order_id, 'Dialyra call originated successfully.', $log_context, 'success' );
 			do_action( Dialyra_Hook_Names::get_or_default( 'call', 'call_originated', 'dialyra_call_originated' ), $order_id, $response );
 
 			return $response;
@@ -147,6 +160,20 @@ class Dialyra_Call_Originate_Service {
 
 		$this->save_failure_meta( $order, $response );
 		$this->log_originate_result( $order_id, $response, $log_context );
+		$this->audit_originate(
+			'originate_failed',
+			$order_id,
+			'Dialyra originate API returned a failure.',
+			array_merge(
+				$log_context,
+				array(
+					'status_code' => $response instanceof Dialyra_API_Response ? absint( $response->get_status_code() ) : 0,
+					'error_type'  => $response instanceof Dialyra_API_Response ? sanitize_key( $response->get_error_type() ) : '',
+					'message'     => $response instanceof Dialyra_API_Response ? sanitize_text_field( $response->get_message() ) : '',
+				)
+			),
+			'error'
+		);
 
 		$status_code = $response ? absint( $response->get_status_code() ) : 0;
 
@@ -317,6 +344,15 @@ class Dialyra_Call_Originate_Service {
 		);
 
 		if ( $order_id ) {
+			$this->audit_originate(
+				'originate_local_error',
+				absint( $order_id ),
+				$message,
+				array(
+					'error_type' => sanitize_key( $error_type ),
+				),
+				'warning'
+			);
 			$this->log_originate_result(
 				absint( $order_id ),
 				$response,
@@ -345,5 +381,26 @@ class Dialyra_Call_Originate_Service {
 		}
 
 		$this->call_log_repository->log_originate_result( $order_id, $response, $context );
+	}
+
+	/**
+	 * Persist an audit row for originate decisions.
+	 *
+	 * @since    1.0.0
+	 * @param    string    $event      Event key.
+	 * @param    int       $order_id   WooCommerce order ID.
+	 * @param    string    $message    Message.
+	 * @param    array     $context    Context.
+	 * @param    string    $level      Level.
+	 */
+	private function audit_originate( $event, $order_id, $message, $context = array(), $level = 'info' ) {
+		if ( ! $this->audit_log_repository || ! method_exists( $this->audit_log_repository, 'log' ) ) {
+			return;
+		}
+
+		$context = is_array( $context ) ? $context : array();
+		$context['order_id'] = absint( $order_id );
+
+		$this->audit_log_repository->log( $event, $message, $context, $level, 'originate' );
 	}
 }
