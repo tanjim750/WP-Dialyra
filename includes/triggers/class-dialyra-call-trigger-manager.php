@@ -139,7 +139,17 @@ class Dialyra_Call_Trigger_Manager {
 		if ( 'delay' === $mode ) {
 			$this->debug_log_trigger( $order_id, 'queued_delay', array( 'scheduled_at' => $this->get_delayed_call_time() ) );
 			$this->queue_order( $order_id, 'delay', $this->get_delayed_call_time() );
+			return;
 		}
+
+		$this->debug_log_trigger(
+			$order_id,
+			'new_order_ignored_by_trigger_mode',
+			array(
+				'mode'          => $mode,
+				'target_status' => $this->get_target_status(),
+			)
+		);
 	}
 
 	/**
@@ -153,20 +163,31 @@ class Dialyra_Call_Trigger_Manager {
 	 */
 	public function handle_order_status_changed( $order_id, $old_status, $new_status, $order = null ) {
 		$mode = $this->get_trigger_mode();
-
-		if ( 'instant' === $mode ) {
-			$this->handle_ready_candidate( $order_id, 'status_fallback' );
-			return;
-		}
-
-		if ( 'delay' === $mode ) {
-			$this->queue_order( $order_id, 'delay', $this->get_delayed_call_time() );
-			return;
-		}
+		$this->debug_log_trigger(
+			$order_id,
+			'status_change_received',
+			array(
+				'mode'          => $mode,
+				'old_status'    => sanitize_key( $old_status ),
+				'new_status'    => sanitize_key( $new_status ),
+				'target_status' => $this->get_target_status(),
+			)
+		);
 
 		if ( 'on_specific_status' === $mode && sanitize_key( $new_status ) === $this->get_target_status() ) {
 			$this->handle_ready_candidate( $order_id, 'status' );
+			return;
 		}
+
+		$this->debug_log_trigger(
+			$order_id,
+			'status_change_ignored_by_trigger_mode',
+			array(
+				'mode'          => $mode,
+				'new_status'    => sanitize_key( $new_status ),
+				'target_status' => $this->get_target_status(),
+			)
+		);
 	}
 
 	/**
@@ -273,8 +294,15 @@ class Dialyra_Call_Trigger_Manager {
 		}
 
 		if ( ! $this->business_hours->is_calling_allowed_now() ) {
-			$this->debug_log_trigger( $order_id, 'queued_business_hours' );
-			$this->log_trigger_blocked( $order_id, 'outside_business_hours', $source, 'business_hours' );
+			$business_hours_context = method_exists( $this->business_hours, 'get_audit_context' ) ? $this->business_hours->get_audit_context() : array();
+			$this->debug_log_trigger(
+				$order_id,
+				'queued_business_hours',
+				array(
+					'business_hours' => $business_hours_context,
+				)
+			);
+			$this->log_trigger_blocked( $order_id, 'outside_business_hours', $source, 'business_hours', $business_hours_context );
 			$this->queue_order( $order_id, 'business_hours', $this->business_hours->get_next_valid_call_time() );
 
 			return array(
@@ -314,7 +342,7 @@ class Dialyra_Call_Trigger_Manager {
 	 * @param    string    $gate        Gate name.
 	 * @return   void
 	 */
-	private function log_trigger_blocked( $order_id, $reason, $source, $gate ) {
+	private function log_trigger_blocked( $order_id, $reason, $source, $gate, $data = array() ) {
 		if ( ! $this->call_log_repository || ! method_exists( $this->call_log_repository, 'log_trigger_blocked' ) ) {
 			return;
 		}
@@ -326,6 +354,7 @@ class Dialyra_Call_Trigger_Manager {
 				'business_id' => $this->business_manager && method_exists( $this->business_manager, 'get_connected_business_id' ) ? $this->business_manager->get_connected_business_id() : 0,
 				'source'      => $source,
 				'gate'        => $gate,
+				'data'        => is_array( $data ) ? $data : array(),
 			)
 		);
 	}
@@ -365,6 +394,10 @@ class Dialyra_Call_Trigger_Manager {
 
 		if ( 'status' === $mode ) {
 			$mode = 'on_specific_status';
+		}
+
+		if ( in_array( $mode, array( 'instant_call', 'instant_call_on_new_order', 'new_order', 'on_new_order' ), true ) ) {
+			$mode = 'instant';
 		}
 
 		$allowed = array( 'instant', 'delay', 'on_specific_status' );

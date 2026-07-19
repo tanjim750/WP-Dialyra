@@ -314,12 +314,13 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 			$wp_dialyra_success        = esc_html__( 'Retry policy saved successfully.', 'wp-dialyra' );
 		}
 	} elseif ( 'save_business_hours' === $settings_action ) {
-		$business_hours_mode = ! empty( $_POST['dialyra_business_hours_always_active'] ) ? 'always_active' : 'scheduled';
+		$posted_business_hours_mode = isset( $_POST['dialyra_business_hours_mode'] ) ? sanitize_key( wp_unslash( $_POST['dialyra_business_hours_mode'] ) ) : '';
+		$business_hours_mode = in_array( $posted_business_hours_mode, array( 'always_active', 'scheduled' ), true ) ? $posted_business_hours_mode : ( ! empty( $_POST['dialyra_business_hours_always_active'] ) ? 'always_active' : 'scheduled' );
 		$business_hours_days = isset( $_POST['dialyra_business_hours_days'] ) && is_array( $_POST['dialyra_business_hours_days'] ) ? array_map( 'sanitize_key', wp_unslash( $_POST['dialyra_business_hours_days'] ) ) : array();
 		$business_hours_days = array_values( array_intersect( $business_hours_days, array_keys( $wp_dialyra_business_days ) ) );
 		$business_hours_days = ! empty( $business_hours_days ) ? $business_hours_days : array( 'all' );
 
-		if ( 'always_active' === $business_hours_mode ) {
+		if ( 'always_active' === $business_hours_mode || in_array( 'all', $business_hours_days, true ) ) {
 			$business_hours_days = array( 'all' );
 		}
 
@@ -432,6 +433,9 @@ $wp_dialyra_business_hours_timezone = ! empty( $wp_dialyra_business_hours_settin
 $wp_dialyra_selected_days = ! empty( $wp_dialyra_business_hours_settings['days'] ) && is_array( $wp_dialyra_business_hours_settings['days'] ) ? array_map( 'sanitize_key', $wp_dialyra_business_hours_settings['days'] ) : array( 'all' );
 $wp_dialyra_selected_days = array_values( array_intersect( $wp_dialyra_selected_days, array_keys( $wp_dialyra_business_days ) ) );
 $wp_dialyra_selected_days = ! empty( $wp_dialyra_selected_days ) ? $wp_dialyra_selected_days : array( 'all' );
+if ( 'always_active' === $wp_dialyra_business_hours_mode || in_array( 'all', $wp_dialyra_selected_days, true ) ) {
+	$wp_dialyra_selected_days = array( 'all' );
+}
 $wp_dialyra_business_hours_open = ! empty( $wp_dialyra_business_hours_settings['open_time'] ) ? sanitize_text_field( $wp_dialyra_business_hours_settings['open_time'] ) : '09:00';
 $wp_dialyra_business_hours_close = ! empty( $wp_dialyra_business_hours_settings['close_time'] ) ? sanitize_text_field( $wp_dialyra_business_hours_settings['close_time'] ) : '18:00';
 $wp_dialyra_status_mapping_settings = isset( $wp_dialyra_setup_settings['order_status_map'] ) && is_array( $wp_dialyra_setup_settings['order_status_map'] ) ? $wp_dialyra_setup_settings['order_status_map'] : array();
@@ -716,6 +720,7 @@ $wp_dialyra_skip_call_statuses = array_values( array_intersect( $wp_dialyra_skip
 
 		<form class="wp-dialyra-settings-card" method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=settings' ) ); ?>" data-dialyra-business-hours-group>
 			<?php wp_nonce_field( 'wp-dialyra-settings', 'wp_dialyra_settings_nonce' ); ?>
+			<input type="hidden" name="dialyra_business_hours_mode" value="<?php echo esc_attr( $wp_dialyra_business_hours_mode ); ?>" data-dialyra-business-hours-mode>
 			<div class="wp-dialyra-settings-card__head">
 				<span aria-hidden="true">06</span>
 				<div>

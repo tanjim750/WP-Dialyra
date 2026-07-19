@@ -469,14 +469,7 @@ class Wp_Dialyra {
 		$woocommerce_entrypoints = new Dialyra_WooCommerce_Entrypoints( $this->audit_log_repository );
 		$scheduler_entrypoints   = new Dialyra_Scheduler_Entrypoints( $this->call_queue_processor, $this->retry_queue_processor );
 
-		$this->loader->add_action( 'woocommerce_new_order', $woocommerce_entrypoints, 'handle_new_order', 20, 2 );
-		$this->loader->add_action( 'woocommerce_checkout_order_created', $woocommerce_entrypoints, 'handle_checkout_order_created', 20, 1 );
-		$this->loader->add_action( 'woocommerce_store_api_checkout_order_processed', $woocommerce_entrypoints, 'handle_store_api_checkout_order_processed', 20, 1 );
-		$this->loader->add_action( 'woocommerce_checkout_update_order_meta', $woocommerce_entrypoints, 'handle_checkout_update_order_meta', 20, 2 );
-		$this->loader->add_action( 'woocommerce_process_shop_order_meta', $woocommerce_entrypoints, 'handle_admin_order_saved', 20, 2 );
-		$this->loader->add_action( 'woocommerce_payment_complete', $woocommerce_entrypoints, 'handle_payment_complete', 20, 1 );
 		$this->loader->add_action( 'woocommerce_thankyou', $woocommerce_entrypoints, 'handle_thankyou', 20, 1 );
-		$this->loader->add_action( 'woocommerce_update_order', $woocommerce_entrypoints, 'handle_order_updated', 20, 2 );
 		$this->loader->add_action( 'woocommerce_order_status_changed', $woocommerce_entrypoints, 'handle_order_status_changed', 20, 4 );
 		$this->loader->add_action( Dialyra_Hook_Names::get( 'business', 'business_changed' ), $this->business_manager, 'handle_connected_business_changed', 10, 4 );
 		$this->loader->add_action( Dialyra_Hook_Names::get( 'order', 'order_created' ), $this->call_trigger_manager, 'handle_new_order' );
@@ -506,14 +499,7 @@ class Wp_Dialyra {
 		set_transient( 'wp_dialyra_entrypoint_hook_audit_logged', 1, 5 * MINUTE_IN_SECONDS );
 
 		$hooks = array(
-			'woocommerce_new_order',
-			'woocommerce_checkout_order_created',
-			'woocommerce_store_api_checkout_order_processed',
-			'woocommerce_checkout_update_order_meta',
-			'woocommerce_process_shop_order_meta',
-			'woocommerce_payment_complete',
 			'woocommerce_thankyou',
-			'woocommerce_update_order',
 			'woocommerce_order_status_changed',
 			Dialyra_Hook_Names::get_or_default( 'order', 'order_created', 'dialyra_order_created' ),
 			Dialyra_Hook_Names::get_or_default( 'order', 'order_status_changed', 'dialyra_order_status_changed' ),

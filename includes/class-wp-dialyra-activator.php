@@ -43,7 +43,9 @@ class Wp_Dialyra_Activator {
 
 		Dialyra_Flow_Product_Assignment_Manager::install_table();
 		Dialyra_Webhook_Idempotency::install_table();
-		Dialyra_Audit_Log_Repository::install_table();
+		if ( Dialyra_Audit_Log_Repository::is_enabled() ) {
+			Dialyra_Audit_Log_Repository::install_table();
+		}
 		Dialyra_Call_Log_Repository::install_table();
 		Dialyra_Call_Queue_Repository::install_table();
 		Dialyra_Retry_Repository::install_table();

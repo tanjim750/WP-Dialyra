@@ -77,6 +77,10 @@ class Dialyra_Audit_Log_Repository {
 	public function log( $event, $message = '', $context = array(), $level = 'info', $source = 'system' ) {
 		global $wpdb;
 
+		if ( ! self::is_enabled() ) {
+			return 0;
+		}
+
 		$context = is_array( $context ) ? $context : array();
 		$row     = array(
 			'level'       => $this->sanitize_level( $level ),
@@ -106,6 +110,10 @@ class Dialyra_Audit_Log_Repository {
 	 */
 	public function query( $args = array() ) {
 		global $wpdb;
+
+		if ( ! self::is_enabled() ) {
+			return array();
+		}
 
 		$args       = is_array( $args ) ? $args : array();
 		$table_name = self::get_table_name();
@@ -142,6 +150,26 @@ class Dialyra_Audit_Log_Repository {
 	}
 
 	/**
+	 * Clear all audit rows.
+	 *
+	 * @since    1.0.0
+	 * @return   bool
+	 */
+	public function clear() {
+		global $wpdb;
+
+		if ( ! self::is_enabled() ) {
+			return false;
+		}
+
+		if ( ! self::table_exists() ) {
+			return false;
+		}
+
+		return false !== $wpdb->query( 'TRUNCATE TABLE ' . self::get_table_name() );
+	}
+
+	/**
 	 * Check if the table exists.
 	 *
 	 * @since    1.0.0
@@ -168,11 +196,25 @@ class Dialyra_Audit_Log_Repository {
 	}
 
 	/**
+	 * Check if Dialyra debug audit logging is enabled.
+	 *
+	 * @since    1.0.0
+	 * @return   bool
+	 */
+	public static function is_enabled() {
+		return defined( 'WP_DIALYRA_DEBUG_MODE' ) && WP_DIALYRA_DEBUG_MODE;
+	}
+
+	/**
 	 * Install table if missing or outdated.
 	 *
 	 * @since    1.0.0
 	 */
 	private function maybe_install_table() {
+		if ( ! self::is_enabled() ) {
+			return;
+		}
+
 		$installed_version = get_option( self::get_table_version_option(), '' );
 
 		if ( self::TABLE_VERSION !== $installed_version || ! self::table_exists() ) {

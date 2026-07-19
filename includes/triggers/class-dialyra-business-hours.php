@@ -23,7 +23,7 @@ class Dialyra_Business_Hours {
 		$settings = $this->get_settings();
 		$mode     = sanitize_key( $settings['availability_mode'] ?? 'always_active' );
 
-		if ( 'always_active' === $mode ) {
+		if ( $this->is_always_active_mode( $mode ) ) {
 			return true;
 		}
 
@@ -57,7 +57,7 @@ class Dialyra_Business_Hours {
 	public function get_next_valid_call_time() {
 		$settings = $this->get_settings();
 
-		if ( 'always_active' === sanitize_key( $settings['availability_mode'] ?? 'always_active' ) ) {
+		if ( $this->is_always_active_mode( sanitize_key( $settings['availability_mode'] ?? 'always_active' ) ) ) {
 			return current_time( 'mysql' );
 		}
 
@@ -86,6 +86,30 @@ class Dialyra_Business_Hours {
 	}
 
 	/**
+	 * Get a lightweight snapshot for audit logs.
+	 *
+	 * @since    1.0.0
+	 * @return   array
+	 */
+	public function get_audit_context() {
+		$settings = $this->get_settings();
+		$timezone = $this->get_timezone( $settings );
+		$now      = new DateTimeImmutable( 'now', $timezone );
+		$mode     = sanitize_key( $settings['availability_mode'] ?? 'always_active' );
+
+		return array(
+			'availability_mode' => $mode,
+			'is_always_active'  => $this->is_always_active_mode( $mode ),
+			'timezone'          => $timezone->getName(),
+			'current_time'      => $now->format( 'Y-m-d H:i:s' ),
+			'days'              => ! empty( $settings['days'] ) && is_array( $settings['days'] ) ? array_values( array_map( 'sanitize_key', $settings['days'] ) ) : array( 'all' ),
+			'open_time'         => sanitize_text_field( $settings['open_time'] ?? '09:00' ),
+			'close_time'        => sanitize_text_field( $settings['close_time'] ?? '18:00' ),
+			'next_valid_time'   => $this->get_next_valid_call_time(),
+		);
+	}
+
+	/**
 	 * Get business-hours settings.
 	 *
 	 * @since    1.0.0
@@ -101,6 +125,17 @@ class Dialyra_Business_Hours {
 		}
 
 		return array_replace_recursive( $defaults, is_array( $settings ) ? $settings : array() );
+	}
+
+	/**
+	 * Check whether a business-hours mode means calls are always allowed.
+	 *
+	 * @since    1.0.0
+	 * @param    string    $mode    Availability mode.
+	 * @return   bool
+	 */
+	private function is_always_active_mode( $mode ) {
+		return in_array( sanitize_key( $mode ), array( '', 'always_active', 'always_open', 'open', 'all_day', '24_7' ), true );
 	}
 
 	/**

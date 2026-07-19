@@ -22,12 +22,15 @@ $wp_dialyra_pages = array(
 	'flow-preview' => 'flow-preview.php',
 	'flows'      => 'flows.php',
 	'login'     => 'login.php',
-	'logs'      => 'logs.php',
 	'queue-calls' => 'queue-calls.php',
 	'settings'  => 'settings.php',
 	'setup'     => 'setup.php',
 	'test-tools' => 'test-tools.php',
 );
+
+if ( defined( 'WP_DIALYRA_DEBUG_MODE' ) && WP_DIALYRA_DEBUG_MODE ) {
+	$wp_dialyra_pages['logs'] = 'logs.php';
+}
 
 $wp_dialyra_current_page = isset( $_GET['p'] ) ? sanitize_key( wp_unslash( $_GET['p'] ) ) : 'dashboard';
 

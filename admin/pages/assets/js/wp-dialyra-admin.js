@@ -102,6 +102,8 @@
 				var $group = $( this );
 				var isAlwaysActive = $group.find( '[data-dialyra-business-hours-toggle]' ).is( ':checked' );
 
+				$group.find( '[data-dialyra-business-hours-mode]' ).val( isAlwaysActive ? 'always_active' : 'scheduled' );
+
 				$group.find( '[data-dialyra-business-hours-always]' )
 					.prop( 'hidden', ! isAlwaysActive )
 					.toggleClass( 'wp-dialyra-is-hidden', ! isAlwaysActive )
@@ -113,6 +115,11 @@
 					.toggleClass( 'wp-dialyra-is-hidden', isAlwaysActive )
 					.find( 'input, select, textarea, button' )
 					.prop( 'disabled', isAlwaysActive );
+
+				if ( isAlwaysActive ) {
+					$group.find( '.wp-dialyra-day-picker input[type="checkbox"]' ).prop( 'checked', false );
+					$group.find( '.wp-dialyra-day-picker input[type="checkbox"][value="all"]' ).prop( 'checked', true );
+				}
 			});
 		};
 
