@@ -263,6 +263,33 @@ class Dialyra_Call_Log_Repository {
 	}
 
 	/**
+	 * Get a local call log row by ID.
+	 *
+	 * @since    1.0.0
+	 * @param    int    $local_log_id    Local call log row ID.
+	 * @return   array
+	 */
+	public function get_log( $local_log_id ) {
+		global $wpdb;
+
+		$local_log_id = absint( $local_log_id );
+
+		if ( ! $local_log_id ) {
+			return array();
+		}
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT * FROM ' . self::get_table_name() . ' WHERE id = %d LIMIT 1',
+				$local_log_id
+			),
+			ARRAY_A
+		);
+
+		return is_array( $row ) ? $row : array();
+	}
+
+	/**
 	 * Increment local retry attempts for a call history row.
 	 *
 	 * @since    1.0.0
@@ -313,6 +340,8 @@ class Dialyra_Call_Log_Repository {
 		if ( ! $local_log_id || empty( $history ) ) {
 			return false;
 		}
+
+		$existing_log = $this->get_log( $local_log_id );
 
 		$template_values = is_array( $history['template_values'] ?? null ) ? $history['template_values'] : array();
 		$dtmf_sequence   = is_array( $template_values['dtmf_sequence'] ?? null ) ? $template_values['dtmf_sequence'] : array();
@@ -370,6 +399,17 @@ class Dialyra_Call_Log_Repository {
 
 		$row = $this->strip_nulls( $row );
 		unset( $row['id'] );
+
+		if ( 'charged' === sanitize_key( $history['billing_status'] ?? '' ) ) {
+			$previous_charged_amount = array_key_exists( 'billing_charged_amount', $existing_log ) && '' !== $existing_log['billing_charged_amount'] ? $existing_log['billing_charged_amount'] : null;
+			$new_charged_amount      = isset( $history['billing_charged_amount'] ) && '' !== $history['billing_charged_amount'] ? $history['billing_charged_amount'] : null;
+
+			do_action(
+				class_exists( 'Dialyra_Hook_Names' ) ? Dialyra_Hook_Names::get_or_default( 'business', 'balance_adjust_requested', 'wp_dialyra_adjust_balance' ) : 'wp_dialyra_adjust_balance',
+				$previous_charged_amount,
+				$new_charged_amount
+			);
+		}
 
 		$updated = $wpdb->update(
 			self::get_table_name(),

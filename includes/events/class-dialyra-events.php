@@ -13,10 +13,14 @@ if ( ! defined( 'WPINC' ) ) {
 
 class Dialyra_Events {
 
-	const ORDER_CREATED         = 'dialyra_order_created';
-	const ORDER_STATUS_CHANGED  = 'dialyra_order_status_changed';
-	const BUSINESS_CHANGED      = 'dialyra_business_changed';
-	const CALL_EVENT_RECEIVED      = 'dialyra_call_event_received';
+	const ORDER_CREATED          = 'dialyra_order_created';
+	const ORDER_STATUS_CHANGED   = 'dialyra_order_status_changed';
+	const BUSINESS_CHANGED       = 'dialyra_business_changed';
+	const BALANCE_ADJUST_REQUESTED     = 'wp_dialyra_adjust_balance';
+	const BALANCE_INPUT_LOAD_REQUESTED = 'wp_dialyra_load_input_balance';
+	const BALANCE_LOAD_REQUESTED       = 'wp_dialyra_load_balance';
+	const BALANCE_LOADED               = 'wp_dialyra_balance_loaded';
+	const CALL_EVENT_RECEIVED          = 'dialyra_call_event_received';
 	const ORDER_ACTION_RECEIVED   = 'dialyra_order_action_received';
 	const ORDER_ACTION_PROCESSED  = 'dialyra_order_action_processed';
 	const ORDER_CONFIRMED         = 'dialyra_order_confirmed';

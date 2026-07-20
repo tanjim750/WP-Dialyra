@@ -245,6 +245,16 @@ class Dialyra_API_Endpoints {
     }
 
     /**
+     * Get visible billing account credit for the authenticated Dialyra user.
+     *
+     * @since    1.0.0
+     * @return   Dialyra_API_Response  The API response containing credit data or error.
+     */
+    public function get_balance() {
+        return $this->client->get( 'billing/me/credits' );
+    }
+
+    /**
      * Update business settings.
      *
      * @since    1.0.0

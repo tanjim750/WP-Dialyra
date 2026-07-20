@@ -478,6 +478,9 @@ class Wp_Dialyra {
 		$this->loader->add_action( 'woocommerce_thankyou', $woocommerce_entrypoints, 'handle_thankyou', 20, 1 );
 		$this->loader->add_action( 'woocommerce_order_status_changed', $woocommerce_entrypoints, 'handle_order_status_changed', 20, 4 );
 		$this->loader->add_action( Dialyra_Hook_Names::get( 'business', 'business_changed' ), $this->business_manager, 'handle_connected_business_changed', 10, 4 );
+		$this->loader->add_action( Dialyra_Hook_Names::get_or_default( 'business', 'balance_adjust_requested', 'wp_dialyra_adjust_balance' ), $this->business_manager, 'adjust_balance', 10, 2 );
+		$this->loader->add_action( Dialyra_Hook_Names::get_or_default( 'business', 'balance_input_load_requested', 'wp_dialyra_load_input_balance' ), $this->business_manager, 'load_input_balance', 10, 1 );
+		$this->loader->add_action( Dialyra_Hook_Names::get_or_default( 'business', 'balance_load_requested', 'wp_dialyra_load_balance' ), $this->business_manager, 'load_balance' );
 		$this->loader->add_action( Dialyra_Hook_Names::get( 'order', 'order_created' ), $this->call_trigger_manager, 'handle_new_order' );
 		$this->loader->add_action( Dialyra_Hook_Names::get( 'order', 'order_status_changed' ), $this->call_trigger_manager, 'handle_order_status_changed', 10, 3 );
 		$this->loader->add_action( 'init', $this, 'debug_entrypoint_hook_registration', 99 );

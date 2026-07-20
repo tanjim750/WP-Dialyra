@@ -33,7 +33,11 @@ class Dialyra_Hook_Names {
 				'order_action_processed' => self::hook( 'ORDER_ACTION_PROCESSED', 'dialyra_order_action_processed' ),
 			),
 			'business' => array(
-				'business_changed' => self::hook( 'BUSINESS_CHANGED', 'dialyra_business_changed' ),
+				'business_changed'             => self::hook( 'BUSINESS_CHANGED', 'dialyra_business_changed' ),
+				'balance_adjust_requested'     => self::hook( 'BALANCE_ADJUST_REQUESTED', 'wp_dialyra_adjust_balance' ),
+				'balance_input_load_requested' => self::hook( 'BALANCE_INPUT_LOAD_REQUESTED', 'wp_dialyra_load_input_balance' ),
+				'balance_load_requested'       => self::hook( 'BALANCE_LOAD_REQUESTED', 'wp_dialyra_load_balance' ),
+				'balance_loaded'               => self::hook( 'BALANCE_LOADED', 'wp_dialyra_balance_loaded' ),
 			),
 			'call'    => array(
 				'call_no_answer'        => self::hook( 'CALL_NO_ANSWER', 'dialyra_call_no_answer' ),

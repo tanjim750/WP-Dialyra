@@ -65,6 +65,10 @@ if ( ! defined( 'WP_DIALYRA_OPTION_BUSINESS_DATA' ) ) {
 	define( 'WP_DIALYRA_OPTION_BUSINESS_DATA', 'dialyra_business_data' );
 }
 
+if ( ! defined( 'WP_DIALYRA_OPTION_BALANCE' ) ) {
+	define( 'WP_DIALYRA_OPTION_BALANCE', 'dialyra_balance' );
+}
+
 if ( ! defined( 'WP_DIALYRA_OPTION_DEFAULT_FLOW_ID' ) ) {
 	define( 'WP_DIALYRA_OPTION_DEFAULT_FLOW_ID', 'dialyra_default_flow_id' );
 }

@@ -23,6 +23,7 @@ class Dialyra_Business_Manager {
 	const SETUP_SETTINGS_OPTION = WP_DIALYRA_OPTION_SETUP_SETTINGS;
 	const SITE_TOKEN_OPTION     = WP_DIALYRA_OPTION_SITE_ACCESS_TOKEN;
 	const SITE_TOKEN_CACHE_OPTION = WP_DIALYRA_OPTION_SITE_ACCESS_TOKEN_CACHE;
+	const BALANCE_OPTION        = WP_DIALYRA_OPTION_BALANCE;
 
 	/**
 	 * The API client object.
@@ -446,6 +447,131 @@ class Dialyra_Business_Manager {
 	}
 
 	/**
+	 * Get locally cached account-level balance data.
+	 *
+	 * @since    1.0.0
+	 * @param    int|null    $business_id    Deprecated. Balance is account-level.
+	 * @return   array
+	 */
+	public function get_balance_data( $business_id = null ) {
+		$balance = get_option( self::BALANCE_OPTION, array() );
+
+		if ( ! is_array( $balance ) || empty( $balance ) ) {
+			return array();
+		}
+
+		return $this->sanitize_balance_data( $balance );
+	}
+
+	/**
+	 * Load account-level balance from Dialyra and cache it locally.
+	 *
+	 * Intended listener for `wp_dialyra_load_balance`.
+	 *
+	 * @since    1.0.0
+	 * @param    int|null    $business_id    Deprecated. Balance is account-level.
+	 * @return   array|false
+	 */
+	public function load_balance( $business_id = null ) {
+		if ( ! $this->api_endpoints || ! method_exists( $this->api_endpoints, 'get_balance' ) ) {
+			return false;
+		}
+
+		$previous = $this->get_balance_data();
+		$response = $this->api_endpoints->get_balance();
+
+		if ( ! $response || ! is_object( $response ) || ! method_exists( $response, 'is_successful' ) || ! $response->is_successful() || ! method_exists( $response, 'get_data' ) ) {
+			return false;
+		}
+
+		$balance = $this->extract_balance_data( $response->get_data() );
+
+		if ( empty( $balance ) ) {
+			return false;
+		}
+
+		return $this->load_input_balance( $balance, $previous, $response );
+	}
+
+	/**
+	 * Adjust the locally cached balance by the difference between old and new call charge.
+	 *
+	 * @since    1.0.0
+	 * @param    mixed    $previous_charged_amount    Previous local charged amount.
+	 * @param    mixed    $new_charged_amount         New synced charged amount.
+	 * @return   array|false
+	 */
+	public function adjust_balance( $previous_charged_amount = null, $new_charged_amount = null ) {
+		$previous_is_null = null === $previous_charged_amount || '' === $previous_charged_amount;
+		$new_is_null      = null === $new_charged_amount || '' === $new_charged_amount;
+
+		if ( $previous_is_null && $new_is_null ) {
+			return false;
+		}
+
+		$previous_units = $previous_is_null ? 0 : $this->money_to_units( $previous_charged_amount );
+		$new_units      = $new_is_null ? 0 : $this->money_to_units( $new_charged_amount );
+
+		if ( $previous_units === $new_units ) {
+			return false;
+		}
+
+		$current = $this->get_balance_data();
+
+		if ( empty( $current ) ) {
+			return false;
+		}
+
+		$current_units  = $this->money_to_units( $current['balance'] ?? ( $current['amount'] ?? 0 ) );
+		$adjusted_units = $current_units + $previous_units - $new_units;
+		$adjusted       = $this->units_to_money( $adjusted_units );
+
+		$balance_input_load_hook = class_exists( 'Dialyra_Hook_Names' ) ? Dialyra_Hook_Names::get_or_default( 'business', 'balance_input_load_requested', 'wp_dialyra_load_input_balance' ) : 'wp_dialyra_load_input_balance';
+
+		do_action( $balance_input_load_hook, $adjusted );
+
+		return $this->get_balance_data();
+	}
+
+	/**
+	 * Load an input balance into the local cache without calling the API.
+	 *
+	 * Intended listener for `wp_dialyra_load_input_balance`.
+	 *
+	 * @since    1.0.0
+	 * @param    mixed                 $balance     Balance value or normalized balance array.
+	 * @param    array|null            $previous    Optional previous balance data.
+	 * @param    Dialyra_API_Response|null $response Optional API response context.
+	 * @return   array|false
+	 */
+	public function load_input_balance( $balance, $previous = null, $response = null ) {
+		if ( null === $balance || '' === $balance ) {
+			return false;
+		}
+
+		$previous = is_array( $previous ) ? $this->sanitize_balance_data( $previous ) : $this->get_balance_data();
+		$current  = is_array( $balance ) ? $this->sanitize_balance_data( $balance ) : $this->sanitize_balance_data(
+			array_merge(
+				is_array( $previous ) ? $previous : array(),
+				array(
+					'amount'           => $balance,
+					'balance'          => $balance,
+					'available_credit' => $balance,
+					'loaded_at'        => current_time( 'mysql' ),
+				)
+			)
+		);
+
+		update_option( self::BALANCE_OPTION, $current, false );
+
+		$balance_loaded_hook = class_exists( 'Dialyra_Hook_Names' ) ? Dialyra_Hook_Names::get_or_default( 'business', 'balance_loaded', 'wp_dialyra_balance_loaded' ) : 'wp_dialyra_balance_loaded';
+
+		do_action( $balance_loaded_hook, $current, $previous, $response );
+
+		return $current;
+	}
+
+	/**
 	 * Update business settings in Dialyra.
 	 *
 	 * @since    1.0.0
@@ -774,6 +900,100 @@ class Dialyra_Business_Manager {
 		$expires_at = ! empty( $token_data['expires_at'] ) ? strtotime( $token_data['expires_at'] ) : 0;
 
 		return ! $expires_at || $expires_at > current_time( 'timestamp' );
+	}
+
+	/**
+	 * Extract normalized balance values from common API response shapes.
+	 *
+	 * @since    1.0.0
+	 * @param    array    $data           API response data.
+	 * @return   array
+	 */
+	private function extract_balance_data( $data ) {
+		$data = is_array( $data ) ? $data : array();
+
+		if ( isset( $data['data'] ) && is_array( $data['data'] ) && ! isset( $data['balance'] ) && ! isset( $data['amount'] ) ) {
+			$data = $data['data'];
+		}
+
+		$billing_account = isset( $data['billing_account'] ) && is_array( $data['billing_account'] ) ? $this->sanitize_payload( $data['billing_account'] ) : array();
+
+		if ( isset( $data['wallet'] ) && is_array( $data['wallet'] ) ) {
+			$data = array_merge( $data['wallet'], $data );
+		}
+
+		$amount = null;
+		foreach ( array( 'balance', 'available_credit', 'available_balance', 'current_balance', 'amount', 'credit', 'wallet_balance' ) as $amount_key ) {
+			if ( isset( $data[ $amount_key ] ) && '' !== $data[ $amount_key ] ) {
+				$amount = (float) $data[ $amount_key ];
+				break;
+			}
+		}
+
+		if ( null === $amount ) {
+			return array();
+		}
+
+		return $this->sanitize_balance_data(
+			array(
+				'amount'           => $amount,
+				'balance'          => isset( $data['balance'] ) ? (float) $data['balance'] : $amount,
+				'available_credit' => isset( $data['available_credit'] ) ? (float) $data['available_credit'] : $amount,
+				'currency'         => ! empty( $data['unit'] ) ? sanitize_text_field( $data['unit'] ) : ( ! empty( $data['currency'] ) ? sanitize_text_field( $data['currency'] ) : 'BDT' ),
+				'status'           => ! empty( $billing_account['ready_for_billing'] ) ? 'ready' : ( ! empty( $data['status'] ) ? sanitize_key( $data['status'] ) : 'available' ),
+				'loaded_at'        => current_time( 'mysql' ),
+				'billing_account'  => $billing_account,
+				'raw'              => $data,
+			)
+		);
+	}
+
+	/**
+	 * Sanitize cached balance data.
+	 *
+	 * @since    1.0.0
+	 * @param    array    $balance    Balance data.
+	 * @return   array
+	 */
+	private function sanitize_balance_data( $balance ) {
+		$balance = is_array( $balance ) ? $balance : array();
+
+		return array(
+			'amount'           => isset( $balance['amount'] ) ? (float) $balance['amount'] : 0.0,
+			'balance'          => isset( $balance['balance'] ) ? (float) $balance['balance'] : ( isset( $balance['amount'] ) ? (float) $balance['amount'] : 0.0 ),
+			'available_credit' => isset( $balance['available_credit'] ) ? (float) $balance['available_credit'] : ( isset( $balance['amount'] ) ? (float) $balance['amount'] : 0.0 ),
+			'currency'         => ! empty( $balance['currency'] ) ? sanitize_text_field( $balance['currency'] ) : 'BDT',
+			'status'           => ! empty( $balance['status'] ) ? sanitize_key( $balance['status'] ) : 'available',
+			'loaded_at'        => ! empty( $balance['loaded_at'] ) ? sanitize_text_field( $balance['loaded_at'] ) : '',
+			'billing_account'  => isset( $balance['billing_account'] ) && is_array( $balance['billing_account'] ) ? $this->sanitize_payload( $balance['billing_account'] ) : array(),
+			'raw'              => isset( $balance['raw'] ) && is_array( $balance['raw'] ) ? $this->sanitize_payload( $balance['raw'] ) : array(),
+		);
+	}
+
+	/**
+	 * Convert money to fixed precision units.
+	 *
+	 * @since    1.0.0
+	 * @param    mixed    $amount    Money amount.
+	 * @return   int
+	 */
+	private function money_to_units( $amount ) {
+		if ( null === $amount || '' === $amount ) {
+			return 0;
+		}
+
+		return (int) round( (float) $amount * 1000000 );
+	}
+
+	/**
+	 * Convert fixed precision units back to money.
+	 *
+	 * @since    1.0.0
+	 * @param    int    $units    Fixed precision units.
+	 * @return   float
+	 */
+	private function units_to_money( $units ) {
+		return round( (int) $units / 1000000, 6 );
 	}
 
 	/**
