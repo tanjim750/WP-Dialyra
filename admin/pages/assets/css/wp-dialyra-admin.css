@@ -881,6 +881,31 @@
 	line-height: 1.6;
 }
 
+.wp-dialyra-balance-reload-form {
+	margin: 0;
+}
+
+.wp-dialyra-balance-reload-button {
+	display: inline-grid;
+	width: 38px;
+	height: 38px;
+	padding: 0;
+	place-items: center;
+	border: 1px solid rgba(32, 101, 238, 0.16);
+	border-radius: 14px;
+	background: rgba(32, 101, 238, 0.1);
+	color: var(--dialyra-blue);
+	cursor: pointer;
+	transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.wp-dialyra-balance-reload-button:hover,
+.wp-dialyra-balance-reload-button:focus {
+	background: rgba(32, 101, 238, 0.16);
+	box-shadow: 0 12px 24px rgba(32, 101, 238, 0.16);
+	transform: translateY(-1px);
+}
+
 .wp-dialyra-meter {
 	overflow: hidden;
 	height: 12px;
@@ -1213,6 +1238,23 @@
 .wp-dialyra-test-summary strong {
 	color: var(--dialyra-ink);
 	font-size: 14px;
+}
+
+.wp-dialyra-test-summary--webhook strong {
+	display: block;
+	overflow-wrap: anywhere;
+	line-height: 1.45;
+}
+
+.wp-dialyra-webhook-health-warning {
+	margin-bottom: 18px;
+}
+
+.wp-dialyra-webhook-health-warning a {
+	margin-left: 8px;
+	color: var(--dialyra-blue);
+	font-weight: 900;
+	text-decoration: none;
 }
 
 .wp-dialyra-agent-call-grid {
@@ -2719,10 +2761,10 @@
 	flex-direction: column;
 	margin-top: 16px;
 	padding: 22px;
-	border: 1px solid rgba(16, 32, 47, 0.1);
+	border: 1px solid rgba(16, 32, 47, 0.06);
 	border-radius: 24px;
-	background: rgba(255, 255, 255, 0.78);
-	box-shadow: 0 18px 44px rgba(16, 32, 47, 0.08);
+	background: #ffffff;
+	box-shadow: 0 12px 32px rgba(16, 32, 47, 0.05);
 	backdrop-filter: blur(14px);
 }
 
@@ -2759,9 +2801,9 @@
 
 .wp-dialyra-call-history-panel h3 {
 	margin: 0 0 6px;
-	color: var(--dialyra-ink);
-	font-size: 22px;
-	font-weight: 850;
+	color: #10202f;
+	font-size: 24px;
+	font-weight: 900;
 	letter-spacing: -0.03em;
 }
 
@@ -2795,28 +2837,95 @@
 
 .wp-dialyra-call-table {
 	display: grid;
-	gap: 8px;
+	gap: 0;
 	overflow-x: auto;
 }
 
 .wp-dialyra-call-table [role="row"] {
 	display: grid;
-	grid-template-columns: 0.75fr 1.15fr 1fr 0.9fr 0.8fr 0.8fr 0.65fr 0.85fr 0.65fr 1.15fr;
+	grid-template-columns: 0.75fr 1.15fr 1fr 0.9fr 0.8fr 0.8fr 0.65fr 0.85fr 0.65fr 1.15fr 0.55fr;
 	gap: 14px;
 	align-items: center;
-	min-width: 1320px;
-	padding: 13px 14px;
-	border-radius: 16px;
-	background: rgba(255, 255, 255, 0.6);
+	min-width: 1420px;
+	padding: 28px 14px;
+	border-radius: 0;
+	background: #ffffff;
+}
+
+.wp-dialyra-call-order-group {
+	min-width: 1420px;
+	border-radius: 0;
+	background: #ffffff !important;
+}
+
+.wp-dialyra-call-order-group > [role="row"] {
+	min-width: 0;
+	border: 0;
+	background: #ffffff !important;
+}
+
+.wp-dialyra-call-table .wp-dialyra-call-order-row,
+.wp-dialyra-call-table .wp-dialyra-call-attempt-row {
+	background: #ffffff !important;
+	box-shadow: none !important;
 }
 
 .wp-dialyra-call-table [role="row"]:first-child {
-	background: rgba(16, 32, 47, 0.06);
-	color: var(--dialyra-muted);
-	font-size: 12px;
+	background: #f0f1f3;
+	border-radius: 23px;
+	color: #6d7b8f;
+	font-size: 13px;
 	font-weight: 900;
 	text-transform: uppercase;
 	letter-spacing: 0.08em;
+	padding-top: 17px;
+	padding-bottom: 17px;
+}
+
+.wp-dialyra-call-history-attempts {
+	margin: -4px 0 14px;
+	padding: 10px 12px 12px;
+	border: 1px solid #e7eaee;
+	border-radius: 18px;
+	background: #ffffff;
+}
+
+.wp-dialyra-call-history-attempts summary {
+	display: inline-flex;
+	gap: 7px;
+	align-items: center;
+	margin: 0 0 6px;
+	padding: 8px 12px;
+	border-radius: 999px;
+	background: #f0f1f3;
+	color: #6d7b8f;
+	cursor: pointer;
+	font-size: 12px;
+	font-weight: 900;
+	list-style: none;
+}
+
+.wp-dialyra-call-history-attempts summary::-webkit-details-marker {
+	display: none;
+}
+
+.wp-dialyra-call-history-attempts[open] summary .dashicons {
+	transform: rotate(180deg);
+}
+
+.wp-dialyra-call-history-attempt-list {
+	display: grid;
+	gap: 0;
+	padding-bottom: 4px;
+	background: #ffffff;
+}
+
+.wp-dialyra-call-table .wp-dialyra-call-attempt-row {
+	min-width: 0;
+	border: 0;
+	background: #ffffff !important;
+	padding-top: 18px;
+	padding-bottom: 18px;
 }
 
 .wp-dialyra-call-table span {
@@ -2828,23 +2937,83 @@
 .wp-dialyra-call-table strong,
 .wp-dialyra-call-table small {
 	display: block;
+	text-transform: none !important;
+	letter-spacing: normal !important;
 }
 
 .wp-dialyra-call-table strong {
-	color: var(--dialyra-ink);
+	color: #10202f;
+	font-size: 14px;
+	font-weight: 850;
+	line-height: 1.25;
 }
 
 .wp-dialyra-call-table small {
 	margin-top: 4px;
-	color: var(--dialyra-muted);
-	font-size: 12px;
-	font-weight: 700;
+	color: #68778e;
+	font-size: 13px;
+	font-weight: 750;
+	line-height: 1.35;
 }
 
 .wp-dialyra-call-table a {
-	color: var(--dialyra-blue-dark);
+	color: #145bd7;
 	font-weight: 900;
+	text-transform: none !important;
+	letter-spacing: normal !important;
 	text-decoration: none;
+}
+
+.wp-dialyra-call-table .wp-dialyra-result {
+	font-size: 13px;
+	font-weight: 850;
+	text-transform: lowercase !important;
+	letter-spacing: normal !important;
+}
+
+.wp-dialyra-call-sync-form {
+	margin: 0;
+}
+
+.wp-dialyra-call-history-row-actions {
+	display: inline-flex !important;
+	gap: 7px;
+	align-items: center;
+	overflow: visible !important;
+}
+
+.wp-dialyra-call-sync-button {
+	display: inline-flex;
+	width: 36px;
+	height: 36px;
+	align-items: center;
+	justify-content: center;
+	border: 1px solid rgba(23, 105, 255, 0.14);
+	border-radius: 12px;
+	background: rgba(23, 105, 255, 0.08);
+	color: var(--dialyra-blue-dark);
+	cursor: pointer;
+	transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.wp-dialyra-call-sync-button:hover,
+.wp-dialyra-call-sync-button:focus {
+	transform: translateY(-1px);
+	background: rgba(23, 105, 255, 0.14);
+	box-shadow: 0 12px 24px rgba(23, 105, 255, 0.14);
+	outline: none;
+}
+
+.wp-dialyra-call-retry-button {
+	border-color: rgba(247, 183, 49, 0.22);
+	background: rgba(247, 183, 49, 0.12);
+	color: #91640a;
+}
+
+.wp-dialyra-call-retry-button:hover,
+.wp-dialyra-call-retry-button:focus {
+	background: rgba(247, 183, 49, 0.18);
+	box-shadow: 0 12px 24px rgba(247, 183, 49, 0.16);
 }
 
 .wp-dialyra-call-table a:hover,
@@ -2855,9 +3024,10 @@
 .wp-dialyra-call-table code {
 	padding: 4px 7px;
 	border-radius: 8px;
-	background: rgba(16, 32, 47, 0.06);
-	color: var(--dialyra-ink);
+	background: #f0f1f3;
+	color: #10202f;
 	font-size: 12px;
+	font-weight: 800;
 }
 
 .wp-dialyra-call-queue {
@@ -3578,6 +3748,24 @@
 	color: #9f1f43;
 	font-weight: 800;
 	line-height: 1.6;
+}
+
+.wp-dialyra-dialog__reference-list {
+	display: grid;
+	gap: 8px;
+	margin: -4px 0 18px;
+	padding: 0;
+	list-style: none;
+}
+
+.wp-dialyra-dialog__reference-list li {
+	padding: 10px 12px;
+	border: 1px solid rgba(234, 48, 91, 0.16);
+	border-radius: 12px;
+	background: rgba(255, 255, 255, 0.72);
+	color: var(--dialyra-ink);
+	font-size: 13px;
+	font-weight: 850;
 }
 
 .wp-dialyra-dialog-lock {
@@ -4420,6 +4608,13 @@
 	box-shadow: 0 12px 22px rgba(16, 32, 47, 0.12);
 }
 
+.wp-dialyra-flow-icon-button:disabled {
+	cursor: not-allowed;
+	opacity: 0.48;
+	transform: none;
+	box-shadow: none;
+}
+
 .wp-dialyra-flow-icon-button:hover::after,
 .wp-dialyra-flow-icon-button:focus::after {
 	opacity: 1;
@@ -4500,6 +4695,12 @@
 .wp-dialyra-menu-list__actions {
 	display: flex;
 	gap: 6px;
+}
+
+.wp-dialyra-menu-list__item .wp-dialyra-flow-icon-button {
+	width: 34px;
+	height: 34px;
+	border-radius: 12px;
 }
 
 .wp-dialyra-global-status-list div {
@@ -4611,6 +4812,44 @@
 .wp-dialyra-dtmf-actions__footer {
 	display: flex;
 	justify-content: flex-end;
+}
+
+.wp-dialyra-flow-empty-inline {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: 6px 12px;
+	align-items: center;
+	padding: 18px;
+	border: 1px dashed rgba(23, 105, 255, 0.24);
+	border-radius: 20px;
+	background:
+		radial-gradient(circle at 0% 0%, rgba(33, 201, 151, 0.1), transparent 38%),
+		rgba(255, 255, 255, 0.62);
+	color: var(--dialyra-muted);
+}
+
+.wp-dialyra-flow-empty-inline .dashicons {
+	grid-row: span 2;
+	width: 36px;
+	height: 36px;
+	border-radius: 14px;
+	background: rgba(23, 105, 255, 0.1);
+	color: var(--dialyra-blue);
+	font-size: 18px;
+	line-height: 36px;
+	text-align: center;
+}
+
+.wp-dialyra-flow-empty-inline strong {
+	color: var(--dialyra-ink);
+	font-size: 14px;
+	font-weight: 900;
+}
+
+.wp-dialyra-flow-empty-inline small {
+	font-size: 12px;
+	font-weight: 750;
+	line-height: 1.5;
 }
 
 .wp-dialyra-timeout-configs {
@@ -4804,6 +5043,12 @@
 	font-weight: 750;
 }
 
+.wp-dialyra-flow-filter-button {
+	align-self: end;
+	min-height: 42px;
+	border-radius: 14px;
+}
+
 .wp-dialyra-flow-table {
 	display: grid;
 	gap: 10px;
@@ -4907,6 +5152,12 @@
 	color: var(--dialyra-ink);
 	font-size: 13px;
 	font-weight: 850;
+}
+
+.wp-dialyra-inline-action {
+	display: inline-flex;
+	margin: 0;
+	padding: 0;
 }
 
 .wp-dialyra-icon-action--success {
@@ -5055,6 +5306,25 @@
 	font-size: 12px;
 	font-style: normal;
 	font-weight: 750;
+}
+
+.wp-dialyra-product-options__empty {
+	padding: 16px;
+	border: 1px dashed rgba(16, 32, 47, 0.14);
+	border-radius: 16px;
+	background: rgba(255, 255, 255, 0.66);
+}
+
+.wp-dialyra-product-options__empty strong {
+	display: block;
+	color: var(--dialyra-ink);
+	font-weight: 900;
+}
+
+.wp-dialyra-product-options__empty p {
+	margin: 6px 0 0;
+	color: var(--dialyra-muted);
+	font-weight: 650;
 }
 
 .wp-dialyra-product-picker__selected > span {
@@ -6914,5 +7184,254 @@
 	.wp-dialyra-create-business__actions .wp-dialyra-button {
 		width: 100%;
 		justify-content: center;
+	}
+}
+
+.wp-dialyra-audit {
+	display: grid;
+	gap: 22px;
+}
+
+.wp-dialyra-audit__hero {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 24px;
+	padding: 28px;
+	border: 1px solid rgba(16, 32, 47, 0.08);
+	border-radius: 30px;
+	background:
+		radial-gradient(circle at 8% 20%, rgba(34, 211, 238, 0.16), transparent 30%),
+		linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 246, 255, 0.86));
+	box-shadow: 0 22px 55px rgba(16, 32, 47, 0.08);
+}
+
+.wp-dialyra-audit__hero h2 {
+	margin: 0 0 8px;
+	color: var(--dialyra-ink);
+	font-size: clamp(30px, 4vw, 46px);
+	letter-spacing: -0.06em;
+}
+
+.wp-dialyra-audit__hero p {
+	max-width: 780px;
+	margin: 0;
+	color: var(--dialyra-muted);
+	font-size: 15px;
+	font-weight: 700;
+	line-height: 1.6;
+}
+
+.wp-dialyra-audit__meter {
+	display: grid;
+	place-items: center;
+	min-width: 148px;
+	min-height: 112px;
+	border: 1px solid rgba(23, 105, 255, 0.14);
+	border-radius: 26px;
+	background: rgba(255, 255, 255, 0.74);
+	box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.75);
+}
+
+.wp-dialyra-audit__side {
+	display: grid;
+	gap: 12px;
+	justify-items: stretch;
+}
+
+.wp-dialyra-audit__side .wp-dialyra-button {
+	width: 100%;
+	justify-content: center;
+}
+
+.wp-dialyra-audit__meter strong {
+	color: var(--dialyra-blue);
+	font-size: 36px;
+	font-weight: 950;
+	line-height: 1;
+}
+
+.wp-dialyra-audit__meter span {
+	color: var(--dialyra-muted);
+	font-size: 11px;
+	font-weight: 900;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+
+.wp-dialyra-audit-notice {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 14px 16px;
+	border: 1px solid rgba(23, 105, 255, 0.14);
+	border-radius: 18px;
+	background: rgba(23, 105, 255, 0.08);
+	color: var(--dialyra-blue-dark);
+	font-weight: 850;
+}
+
+.wp-dialyra-audit-notice p {
+	margin: 0;
+}
+
+.wp-dialyra-audit-filter {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(120px, 1fr)) auto;
+	gap: 14px;
+	align-items: end;
+	padding: 18px;
+	border: 1px solid rgba(16, 32, 47, 0.08);
+	border-radius: 24px;
+	background: rgba(255, 255, 255, 0.86);
+	box-shadow: 0 16px 44px rgba(16, 32, 47, 0.06);
+}
+
+.wp-dialyra-audit-filter label {
+	display: grid;
+	gap: 8px;
+	margin: 0;
+}
+
+.wp-dialyra-audit-filter label span {
+	color: var(--dialyra-ink);
+	font-size: 11px;
+	font-weight: 950;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+
+.wp-dialyra-audit-filter input,
+.wp-dialyra-audit-filter select {
+	width: 100%;
+	min-height: 42px;
+	border-radius: 14px;
+	font-weight: 800;
+}
+
+.wp-dialyra-audit-filter__actions {
+	display: inline-flex;
+	gap: 10px;
+	align-items: center;
+	justify-content: flex-end;
+}
+
+.wp-dialyra-audit-table-wrap {
+	overflow: hidden;
+	border: 1px solid rgba(16, 32, 47, 0.08);
+	border-radius: 26px;
+	background: rgba(255, 255, 255, 0.92);
+	box-shadow: 0 20px 60px rgba(16, 32, 47, 0.08);
+}
+
+.wp-dialyra-audit-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.wp-dialyra-audit-table th {
+	padding: 16px 14px;
+	background: rgba(16, 32, 47, 0.045);
+	color: var(--dialyra-muted);
+	font-size: 11px;
+	font-weight: 950;
+	letter-spacing: 0.14em;
+	text-align: left;
+	text-transform: uppercase;
+}
+
+.wp-dialyra-audit-table td {
+	padding: 16px 14px;
+	border-top: 1px solid rgba(16, 32, 47, 0.07);
+	color: var(--dialyra-ink);
+	font-size: 13px;
+	font-weight: 750;
+	vertical-align: top;
+}
+
+.wp-dialyra-audit-time {
+	display: inline-block;
+	min-width: 128px;
+	color: var(--dialyra-muted);
+	font-size: 12px;
+}
+
+.wp-dialyra-audit-level {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 76px;
+	padding: 6px 10px;
+	border-radius: 999px;
+	background: rgba(100, 116, 139, 0.1);
+	color: #475569;
+	font-size: 11px;
+	font-weight: 950;
+	text-transform: uppercase;
+}
+
+.wp-dialyra-audit-level--success {
+	background: rgba(16, 185, 129, 0.13);
+	color: #047857;
+}
+
+.wp-dialyra-audit-level--warning {
+	background: rgba(245, 158, 11, 0.16);
+	color: #a16207;
+}
+
+.wp-dialyra-audit-level--error {
+	background: rgba(244, 63, 94, 0.14);
+	color: #be123c;
+}
+
+.wp-dialyra-audit-level--debug {
+	background: rgba(23, 105, 255, 0.1);
+	color: var(--dialyra-blue-dark);
+}
+
+.wp-dialyra-audit-context summary {
+	cursor: pointer;
+	color: var(--dialyra-blue);
+	font-size: 12px;
+	font-weight: 950;
+}
+
+.wp-dialyra-audit-context pre {
+	overflow: auto;
+	max-width: 420px;
+	max-height: 260px;
+	margin: 10px 0 0;
+	padding: 14px;
+	border-radius: 16px;
+	background: #0f172a;
+	color: #dbeafe;
+	font-size: 12px;
+	line-height: 1.55;
+	white-space: pre-wrap;
+}
+
+@media (max-width: 1180px) {
+	.wp-dialyra-audit-filter {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.wp-dialyra-audit-filter__actions {
+		justify-content: flex-start;
+	}
+
+	.wp-dialyra-audit-table-wrap {
+		overflow-x: auto;
+	}
+}
+
+@media (max-width: 782px) {
+	.wp-dialyra-audit__hero {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.wp-dialyra-audit-filter {
+		grid-template-columns: 1fr;
 	}
 }

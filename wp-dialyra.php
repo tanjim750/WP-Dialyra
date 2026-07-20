@@ -38,6 +38,13 @@ if ( ! defined( 'WPINC' ) ) {
 define( 'WP_DIALYRA_VERSION', '1.0.0' );
 
 /**
+ * Enable plugin-owned audit logging and the hidden audit log page.
+ */
+if ( ! defined( 'WP_DIALYRA_DEBUG_MODE' ) ) {
+	define( 'WP_DIALYRA_DEBUG_MODE', true );
+}
+
+/**
  * Shared plugin constants.
  */
 require_once plugin_dir_path( __FILE__ ) . 'includes/constant.php';
