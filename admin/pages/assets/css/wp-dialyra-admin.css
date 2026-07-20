@@ -3242,6 +3242,13 @@
 	gap: 8px;
 }
 
+.wp-dialyra-queue-table__actions form,
+.wp-dialyra-retry-list form,
+.wp-dialyra-queue-panel__footer form,
+.wp-dialyra-queue-panel__head form {
+	margin: 0;
+}
+
 .wp-dialyra-queue-action {
 	display: inline-flex;
 	width: 40px;
