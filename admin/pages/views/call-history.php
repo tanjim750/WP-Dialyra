@@ -747,18 +747,10 @@ $wp_dialyra_statuses = array( 'completed', 'failed', 'busy', 'no_answer', 'cance
 				<span aria-hidden="true">02</span>
 				<div>
 					<h3><?php esc_html_e( 'Call log', 'wp-dialyra' ); ?></h3>
-					<p><?php esc_html_e( 'Completed, failed, and no-answer rows from the local Dialyra call logs table.', 'wp-dialyra' ); ?></p>
+					<p><?php esc_html_e( 'Completed, failed, and no-answer sessions with order links and billing result.', 'wp-dialyra' ); ?></p>
 				</div>
 			</div>
-			<em class="wp-dialyra-result wp-dialyra-result--muted">
-				<?php
-				printf(
-					/* translators: %d: order count. */
-					esc_html( _n( '%d order', '%d orders', count( $wp_dialyra_call_groups ), 'wp-dialyra' ) ),
-					absint( count( $wp_dialyra_call_groups ) )
-				);
-				?>
-			</em>
+				<em class="wp-dialyra-result wp-dialyra-result--muted"><?php esc_html_e( 'View only', 'wp-dialyra' ); ?></em>
 		</div>
 
 		<?php if ( empty( $wp_dialyra_call_groups ) ) : ?>
@@ -791,23 +783,23 @@ $wp_dialyra_statuses = array( 'completed', 'failed', 'busy', 'no_answer', 'cance
 					?>
 					<div class="wp-dialyra-call-order-group">
 					<div role="row" class="wp-dialyra-call-order-row">
-						<span>
-							<?php if ( $call['order_id'] ) : ?>
-								<a href="<?php echo esc_url( admin_url( 'post.php?post=' . absint( $call['order_id'] ) . '&action=edit' ) ); ?>"><?php echo esc_html( $call['order_id'] . ' . ' . $call['order_status_label'] ); ?></a>
-								<small><?php esc_html_e( 'WooCommerce order', 'wp-dialyra' ); ?></small>
+							<span>
+								<?php if ( $call['order_id'] ) : ?>
+									<a href="<?php echo esc_url( admin_url( 'post.php?post=' . absint( $call['order_id'] ) . '&action=edit' ) ); ?>"><?php echo esc_html( $call['order_id'] ); ?></a>
+									<small><?php echo esc_html( $call['order_status_label'] ); ?></small>
 							<?php else : ?>
 								<strong>—</strong>
 								<small><?php esc_html_e( 'No order link', 'wp-dialyra' ); ?></small>
 							<?php endif; ?>
 						</span>
-						<span><strong><?php echo esc_html( $call['customer_name'] ); ?></strong><small><?php echo esc_html( $call['flow_name'] ); ?></small></span>
-						<span><strong><?php echo esc_html( $call['number'] ); ?></strong><small><?php esc_html_e( 'local log', 'wp-dialyra' ); ?></small></span>
+							<span><strong><?php echo esc_html( $call['customer_name'] ); ?></strong><small><?php echo esc_html( $call['flow_name'] ); ?></small></span>
+							<span><strong><?php echo esc_html( $call['number'] ); ?></strong><small><?php esc_html_e( 'dialed outbound', 'wp-dialyra' ); ?></small></span>
 						<span><em class="wp-dialyra-result <?php echo esc_attr( $wp_dialyra_status_class( $call['status'] ) ); ?>"><?php echo esc_html( $call['status'] ); ?></em><small><?php echo esc_html( $call['call_status'] ); ?></small></span>
 						<span><strong><?php echo esc_html( $call['duration'] ); ?></strong><small><?php echo esc_html( sprintf( __( 'billsec %s', 'wp-dialyra' ), $call['billsec'] ) ); ?></small></span>
 						<span><strong><?php echo esc_html( $call['cost'] ); ?></strong><small><?php echo esc_html( $call['billing_status'] ); ?></small></span>
 						<span><code><?php echo esc_html( $call['dtmf'] ); ?></code><small><?php echo esc_html( $call['dtmf_meta'] ); ?></small></span>
 						<span><code><?php echo esc_html( $call['from_number'] ); ?></code><small><?php echo $call['sip_trunk_id'] ? esc_html( sprintf( __( 'trunk %d', 'wp-dialyra' ), $call['sip_trunk_id'] ) ) : esc_html__( 'no trunk', 'wp-dialyra' ); ?></small></span>
-						<span><strong><?php echo esc_html( $call['retries'] ); ?></strong><small><?php esc_html_e( 'local retry records', 'wp-dialyra' ); ?></small></span>
+							<span><strong><?php echo esc_html( $call['retries'] ); ?></strong><small><?php echo esc_html( 1 === absint( $call['retries'] ) ? __( 'attempt', 'wp-dialyra' ) : __( 'attempts', 'wp-dialyra' ) ); ?></small></span>
 						<span><strong><?php echo esc_html( $call['started_at'] ); ?></strong><small><?php echo esc_html( $call['hangup_cause'] ); ?></small></span>
 						<span>
 							<span class="wp-dialyra-call-history-row-actions">
@@ -849,16 +841,16 @@ $wp_dialyra_statuses = array( 'completed', 'failed', 'busy', 'no_answer', 'cance
 									<div role="row" class="wp-dialyra-call-attempt-row">
 										<span>
 											<strong><?php echo esc_html( sprintf( __( 'Attempt #%d', 'wp-dialyra' ), absint( $history_call['local_log_id'] ) ) ); ?></strong>
-											<small><?php echo esc_html( $history_call['order_id'] ? $history_call['order_id'] . ' . ' . $history_call['order_status_label'] : __( 'No order link', 'wp-dialyra' ) ); ?></small>
+											<small><?php echo esc_html( $history_call['order_id'] ? $history_call['order_status_label'] : __( 'No order link', 'wp-dialyra' ) ); ?></small>
 										</span>
 										<span><strong><?php echo esc_html( $history_call['customer_name'] ); ?></strong><small><?php echo esc_html( $history_call['flow_name'] ); ?></small></span>
-										<span><strong><?php echo esc_html( $history_call['number'] ); ?></strong><small><?php esc_html_e( 'local log', 'wp-dialyra' ); ?></small></span>
+										<span><strong><?php echo esc_html( $history_call['number'] ); ?></strong><small><?php esc_html_e( 'dialed outbound', 'wp-dialyra' ); ?></small></span>
 										<span><em class="wp-dialyra-result <?php echo esc_attr( $wp_dialyra_status_class( $history_call['status'] ) ); ?>"><?php echo esc_html( $history_call['status'] ); ?></em><small><?php echo esc_html( $history_call['call_status'] ); ?></small></span>
 										<span><strong><?php echo esc_html( $history_call['duration'] ); ?></strong><small><?php echo esc_html( sprintf( __( 'billsec %s', 'wp-dialyra' ), $history_call['billsec'] ) ); ?></small></span>
 										<span><strong><?php echo esc_html( $history_call['cost'] ); ?></strong><small><?php echo esc_html( $history_call['billing_status'] ); ?></small></span>
 										<span><code><?php echo esc_html( $history_call['dtmf'] ); ?></code><small><?php echo esc_html( $history_call['dtmf_meta'] ); ?></small></span>
 										<span><code><?php echo esc_html( $history_call['from_number'] ); ?></code><small><?php echo $history_call['sip_trunk_id'] ? esc_html( sprintf( __( 'trunk %d', 'wp-dialyra' ), $history_call['sip_trunk_id'] ) ) : esc_html__( 'no trunk', 'wp-dialyra' ); ?></small></span>
-										<span><strong><?php echo esc_html( $history_call['retries'] ); ?></strong><small><?php esc_html_e( 'retry records', 'wp-dialyra' ); ?></small></span>
+										<span><strong><?php echo esc_html( $history_call['retries'] ); ?></strong><small><?php echo esc_html( 1 === absint( $history_call['retries'] ) ? __( 'attempt', 'wp-dialyra' ) : __( 'attempts', 'wp-dialyra' ) ); ?></small></span>
 										<span><strong><?php echo esc_html( $history_call['started_at'] ); ?></strong><small><?php echo esc_html( $history_call['hangup_cause'] ); ?></small></span>
 										<span>
 											<span class="wp-dialyra-call-history-row-actions">
