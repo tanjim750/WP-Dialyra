@@ -104,6 +104,30 @@ class Dialyra_Call_Queue_Processor {
 	}
 
 	/**
+	 * Process one pending queue record by ID.
+	 *
+	 * @since    1.0.0
+	 * @param    int    $queue_id    Queue ID.
+	 * @return   string
+	 */
+	public function process_queue_item( $queue_id ) {
+		$queue_id = absint( $queue_id );
+		$row      = method_exists( $this->queue_repository, 'get_by_id' ) ? $this->queue_repository->get_by_id( $queue_id ) : array();
+
+		if ( empty( $row ) || 'pending' !== sanitize_key( $row['status'] ?? '' ) ) {
+			return 'not_found';
+		}
+
+		$order_id = absint( $row['order_id'] ?? 0 );
+
+		if ( ! $order_id || ! $this->queue_repository->claim( $queue_id ) ) {
+			return 'not_claimed';
+		}
+
+		return $this->process_claimed_row( $queue_id, $order_id );
+	}
+
+	/**
 	 * Process one claimed queue record.
 	 *
 	 * @since    1.0.0
@@ -147,6 +171,7 @@ class Dialyra_Call_Queue_Processor {
 		}
 
 		if ( $response instanceof Dialyra_API_Response && absint( $response->get_status_code() ) > 0 ) {
+			$this->queue_repository->defer( $queue_id, 'originate_error', $this->get_concurrency_retry_time() );
 			return 'deferred';
 		}
 

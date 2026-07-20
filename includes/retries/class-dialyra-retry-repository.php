@@ -94,6 +94,33 @@ class Dialyra_Retry_Repository {
 	}
 
 	/**
+	 * Get a retry row by ID.
+	 *
+	 * @since    1.0.0
+	 * @param    int    $retry_id    Retry row ID.
+	 * @return   array
+	 */
+	public function get_by_id( $retry_id ) {
+		global $wpdb;
+
+		$retry_id = absint( $retry_id );
+
+		if ( ! $retry_id ) {
+			return array();
+		}
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT * FROM ' . self::get_table_name() . ' WHERE id = %d LIMIT 1',
+				$retry_id
+			),
+			ARRAY_A
+		);
+
+		return is_array( $row ) ? $row : array();
+	}
+
+	/**
 	 * Insert a pending retry item.
 	 *
 	 * @since    1.0.0

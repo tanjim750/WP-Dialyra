@@ -157,6 +157,15 @@ class Wp_Dialyra {
 	protected $call_trigger_manager;
 
 	/**
+	 * The Dialyra call queue repository.
+	 *
+	 * @since    1.0.0
+	 * @access   protected
+	 * @var      Dialyra_Call_Queue_Repository
+	 */
+	protected $call_queue_repository;
+
+	/**
 	 * The Dialyra call queue processor.
 	 *
 	 * @since    1.0.0
@@ -246,12 +255,12 @@ class Wp_Dialyra {
 			$this->audit_log_repository
 		);
 
-		$call_queue_repository = new Dialyra_Call_Queue_Repository();
+		$this->call_queue_repository = new Dialyra_Call_Queue_Repository();
 		$call_eligibility      = new Dialyra_Call_Eligibility();
 		$business_hours        = new Dialyra_Business_Hours();
 		$this->retry_repository = new Dialyra_Retry_Repository();
 		$this->call_queue_processor = new Dialyra_Call_Queue_Processor(
-			$call_queue_repository,
+			$this->call_queue_repository,
 			$call_eligibility,
 			$business_hours,
 			$this->call_originate_service
@@ -259,7 +268,7 @@ class Wp_Dialyra {
 
 		$this->call_trigger_manager = new Dialyra_Call_Trigger_Manager(
 			$this->business_manager,
-			$call_queue_repository,
+			$this->call_queue_repository,
 			$call_eligibility,
 			$business_hours,
 			$this->call_originate_service,
@@ -626,6 +635,46 @@ class Wp_Dialyra {
 	 */
 	public function get_call_trigger_manager() {
 		return $this->call_trigger_manager;
+	}
+
+	/**
+	 * Get the call queue repository.
+	 *
+	 * @since     1.0.0
+	 * @return    Dialyra_Call_Queue_Repository
+	 */
+	public function get_call_queue_repository() {
+		return $this->call_queue_repository;
+	}
+
+	/**
+	 * Get the call queue processor.
+	 *
+	 * @since     1.0.0
+	 * @return    Dialyra_Call_Queue_Processor
+	 */
+	public function get_call_queue_processor() {
+		return $this->call_queue_processor;
+	}
+
+	/**
+	 * Get the retry repository.
+	 *
+	 * @since     1.0.0
+	 * @return    Dialyra_Retry_Repository
+	 */
+	public function get_retry_repository() {
+		return $this->retry_repository;
+	}
+
+	/**
+	 * Get the retry queue processor.
+	 *
+	 * @since     1.0.0
+	 * @return    Dialyra_Retry_Queue_Processor
+	 */
+	public function get_retry_queue_processor() {
+		return $this->retry_queue_processor;
 	}
 
 }

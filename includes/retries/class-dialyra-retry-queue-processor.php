@@ -127,6 +127,31 @@ class Dialyra_Retry_Queue_Processor {
 	}
 
 	/**
+	 * Process one retry queue record by ID.
+	 *
+	 * @since    1.0.0
+	 * @param    int    $retry_id    Retry queue ID.
+	 * @return   string
+	 */
+	public function process_retry_item( $retry_id ) {
+		$retry_id = absint( $retry_id );
+		$row      = method_exists( $this->retry_repository, 'get_by_id' ) ? $this->retry_repository->get_by_id( $retry_id ) : array();
+		$status   = sanitize_key( $row['status'] ?? '' );
+
+		if ( empty( $row ) || ! in_array( $status, array( 'pending', 'scheduled' ), true ) ) {
+			return 'not_found';
+		}
+
+		$order_id = absint( $row['order_id'] ?? 0 );
+
+		if ( ! $order_id || ! $this->retry_repository->claim( $retry_id ) ) {
+			return 'not_claimed';
+		}
+
+		return $this->process_claimed_row( $retry_id, $order_id, $row );
+	}
+
+	/**
 	 * Process one claimed retry row.
 	 *
 	 * @since    1.0.0

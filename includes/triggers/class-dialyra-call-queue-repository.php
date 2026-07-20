@@ -148,6 +148,33 @@ class Dialyra_Call_Queue_Repository {
 	}
 
 	/**
+	 * Get a queue row by ID.
+	 *
+	 * @since    1.0.0
+	 * @param    int    $queue_id    Queue row ID.
+	 * @return   array
+	 */
+	public function get_by_id( $queue_id ) {
+		global $wpdb;
+
+		$queue_id = absint( $queue_id );
+
+		if ( ! $queue_id ) {
+			return array();
+		}
+
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				'SELECT * FROM ' . self::get_table_name() . ' WHERE id = %d LIMIT 1',
+				$queue_id
+			),
+			ARRAY_A
+		);
+
+		return is_array( $row ) ? $row : array();
+	}
+
+	/**
 	 * Atomically claim a queue row for processing.
 	 *
 	 * @since    1.0.0
