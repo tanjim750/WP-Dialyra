@@ -98,21 +98,22 @@ class Dialyra_Call_Originate_Service {
 	public function originate_for_order( $order_id, $origin_context = array() ) {
 		$order_id = absint( $order_id );
 		$origin_context = is_array( $origin_context ) ? $origin_context : array();
+		$suppress_error_hooks = ! empty( $origin_context['suppress_error_hooks'] ) || ! empty( $origin_context['suppress_originate_error_hook'] );
 
 		if ( ! function_exists( 'wc_get_order' ) ) {
-			return $this->local_error( 'woocommerce_unavailable', __( 'WooCommerce is not available.', 'wp-dialyra' ) );
+			return $this->local_error( 'woocommerce_unavailable', __( 'WooCommerce is not available.', 'wp-dialyra' ), 0, $suppress_error_hooks );
 		}
 
 		$order = wc_get_order( $order_id );
 
 		if ( ! $order ) {
-			return $this->local_error( 'order_not_found', __( 'WooCommerce order was not found.', 'wp-dialyra' ) );
+			return $this->local_error( 'order_not_found', __( 'WooCommerce order was not found.', 'wp-dialyra' ), 0, $suppress_error_hooks );
 		}
 
 		$business_id = $this->business_manager->get_connected_business_id();
 
 		if ( ! $business_id ) {
-			return $this->local_error( 'business_not_connected', __( 'No Dialyra business is connected.', 'wp-dialyra' ), $order_id );
+			return $this->local_error( 'business_not_connected', __( 'No Dialyra business is connected.', 'wp-dialyra' ), $order_id, $suppress_error_hooks );
 		}
 
 		$this->business_manager->ensure_site_access_token( $business_id );
@@ -121,23 +122,23 @@ class Dialyra_Call_Originate_Service {
 		$token      = ! empty( $token_data['token'] ) && absint( $token_data['business_id'] ?? 0 ) === $business_id ? sanitize_text_field( $token_data['token'] ) : '';
 
 		if ( '' === $token ) {
-			return $this->local_error( 'unauthenticated', __( 'Business access token missing.', 'wp-dialyra' ), $order_id );
+			return $this->local_error( 'unauthenticated', __( 'Business access token missing.', 'wp-dialyra' ), $order_id, $suppress_error_hooks );
 		}
 
 		if ( ! $this->has_originate_scope( $token_data ) ) {
-			return $this->local_error( 'missing_scope', __( 'Business access token does not include the calls:originate scope.', 'wp-dialyra' ), $order_id );
+			return $this->local_error( 'missing_scope', __( 'Business access token does not include the calls:originate scope.', 'wp-dialyra' ), $order_id, $suppress_error_hooks );
 		}
 
 		$flow_result = $this->flow_resolver->resolve_for_order( $order_id, $business_id );
 
 		if ( empty( $flow_result['success'] ) ) {
-			return $this->local_error( $flow_result['error_type'] ?? 'flow_not_configured', $flow_result['message'] ?? __( 'No product-specific or default Dialyra flow is configured.', 'wp-dialyra' ), $order_id );
+			return $this->local_error( $flow_result['error_type'] ?? 'flow_not_configured', $flow_result['message'] ?? __( 'No product-specific or default Dialyra flow is configured.', 'wp-dialyra' ), $order_id, $suppress_error_hooks );
 		}
 
 		$request_result = $this->request_builder->build_order_call_request( $order, absint( $flow_result['flow_id'] ) );
 
 		if ( empty( $request_result['success'] ) ) {
-			return $this->local_error( $request_result['error_type'] ?? 'bad_request', $request_result['message'] ?? __( 'Call request could not be prepared.', 'wp-dialyra' ), $order_id );
+			return $this->local_error( $request_result['error_type'] ?? 'bad_request', $request_result['message'] ?? __( 'Call request could not be prepared.', 'wp-dialyra' ), $order_id, $suppress_error_hooks );
 		}
 
 		$response = $this->api_endpoints->originate_call( $request_result['payload'], $token );
@@ -147,6 +148,13 @@ class Dialyra_Call_Originate_Service {
 			'phone'       => sanitize_text_field( $request_result['payload']['phone'] ?? '' ),
 			'source'      => sanitize_key( $origin_context['source'] ?? 'originate' ),
 		);
+
+		foreach ( array( 'retry_id', 'retry_attempt', 'source_call_session_id', 'queue_call_session_id' ) as $retry_context_key ) {
+			if ( isset( $origin_context[ $retry_context_key ] ) ) {
+				$log_context[ $retry_context_key ] = absint( $origin_context[ $retry_context_key ] );
+			}
+		}
+
 		$this->audit_originate( 'originate_api_called', $order_id, 'Dialyra originate API was called.', array_merge( $log_context, array( 'status_code' => $response instanceof Dialyra_API_Response ? absint( $response->get_status_code() ) : 0 ) ), 'info' );
 
 		if ( $response && $response->is_successful() ) {
@@ -178,32 +186,46 @@ class Dialyra_Call_Originate_Service {
 		$status_code = $response ? absint( $response->get_status_code() ) : 0;
 
 		if ( 401 === $status_code ) {
+			if ( $suppress_error_hooks ) {
+				return $response;
+			}
+
 			do_action( Dialyra_Hook_Names::get_or_default( 'call', 'call_unauthorized', 'dialyra_call_unauthorized' ), $order_id, $response );
 
 			return $response;
 		}
 
 		if ( 402 === $status_code ) {
+			if ( $suppress_error_hooks ) {
+				return $response;
+			}
+
 			do_action( Dialyra_Hook_Names::get_or_default( 'call', 'call_billing_blocked', 'dialyra_call_billing_blocked' ), $order_id, $response );
 
 			return $response;
 		}
 
 		if ( 400 === $status_code && $this->is_invalid_flow_response( $response ) ) {
+			if ( $suppress_error_hooks ) {
+				return $response;
+			}
+
 			do_action( Dialyra_Hook_Names::get_or_default( 'call', 'call_invalid_flow', 'dialyra_call_invalid_flow' ), $order_id, $response, $this->build_flow_error_context( $business_id, $flow_result, $response ) );
 
 			return $response;
 		}
 
-		if ( $response instanceof Dialyra_API_Response && empty( $origin_context['suppress_originate_error_hook'] ) ) {
+		if ( $response instanceof Dialyra_API_Response && ! $suppress_error_hooks ) {
 			do_action( Dialyra_Hook_Names::get_or_default( 'call', 'call_originate_error', 'dialyra_call_originate_error' ), $order_id, $response, $this->build_flow_error_context( $business_id, $flow_result, $response ) );
 
 			return $response;
 		}
 
-		do_action( Dialyra_Hook_Names::get_or_default( 'call', 'call_originate_failed', 'dialyra_call_originate_failed' ), $order_id, $response );
+		if ( ! $suppress_error_hooks ) {
+			do_action( Dialyra_Hook_Names::get_or_default( 'call', 'call_originate_failed', 'dialyra_call_originate_failed' ), $order_id, $response );
+		}
 
-		return $response ? $response : $this->local_error( 'network_error', __( 'Call originate request failed.', 'wp-dialyra' ), $order_id );
+		return $response ? $response : $this->local_error( 'network_error', __( 'Call originate request failed.', 'wp-dialyra' ), $order_id, $suppress_error_hooks );
 	}
 
 	/**
@@ -332,7 +354,7 @@ class Dialyra_Call_Originate_Service {
 	 * @param    int       $order_id      Optional order ID.
 	 * @return   Dialyra_API_Response
 	 */
-	private function local_error( $error_type, $message, $order_id = 0 ) {
+	private function local_error( $error_type, $message, $order_id = 0, $suppress_error_hooks = false ) {
 		$response = new Dialyra_API_Response(
 			array(
 				'error'      => sanitize_text_field( $message ),
@@ -361,7 +383,9 @@ class Dialyra_Call_Originate_Service {
 					'source'      => 'local_error',
 				)
 			);
-			do_action( Dialyra_Hook_Names::get_or_default( 'call', 'call_originate_failed', 'dialyra_call_originate_failed' ), absint( $order_id ), $response );
+			if ( ! $suppress_error_hooks ) {
+				do_action( Dialyra_Hook_Names::get_or_default( 'call', 'call_originate_failed', 'dialyra_call_originate_failed' ), absint( $order_id ), $response );
+			}
 		}
 
 		return $response;

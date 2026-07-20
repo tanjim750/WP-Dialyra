@@ -37,6 +37,7 @@ class Dialyra_Webhook_Event_Normalizer {
 			'business_id'      => $this->nullable_absint( $event['business_id'] ?? ( $call['business_id'] ?? ( $payload['business_id'] ?? null ) ) ),
 			'call_session_id'  => $this->nullable_absint( $call['call_session_id'] ?? ( $call['id'] ?? ( $payload['call_session_id'] ?? null ) ) ),
 			'call_log_id'      => $this->nullable_absint( $call['call_log_id'] ?? ( $payload['call_log_id'] ?? null ) ),
+			'action_id'        => $this->text_value( $call['action_id'] ?? ( $payload['action_id'] ?? ( $template_values['call_action_id'] ?? '' ) ) ),
 			'call_status'      => $this->text_value( $call['call_status'] ?? ( $call['status'] ?? ( $payload['call_status'] ?? '' ) ) ),
 			'order_id'         => $this->nullable_absint( $template_values['order_id'] ?? ( $call['order_id'] ?? ( $payload['order_id'] ?? null ) ) ),
 			'order_action'     => $this->order_action_value( $template_values['order_action'] ?? ( $call['order_action'] ?? ( $payload['order_action'] ?? 'none' ) ) ),

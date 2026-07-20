@@ -434,7 +434,7 @@ class Wp_Dialyra {
 		$order_listener      = new Dialyra_Order_Action_Listener();
 		$retry_listener      = new Dialyra_Retry_Listener();
 		$retry_registrar     = new Dialyra_Retry_Registrar( $this->retry_repository );
-		$call_sync_listener  = new Dialyra_Call_Sync_Listener();
+		$call_sync_listener  = new Dialyra_Call_Sync_Listener( $this->api_endpoints, $this->call_log_repository );
 
 		$this->loader->add_action( 'rest_api_init', $webhook_controller, 'register_routes' );
 		$this->loader->add_filter( 'rest_authentication_errors', $webhook_rest_compatibility, 'allow_webhook_route', 1 );
@@ -460,6 +460,7 @@ class Wp_Dialyra {
 		$this->loader->add_action( Dialyra_Hook_Names::get( 'call', 'call_busy' ), $retry_registrar, 'handle_busy_call', 20, 2 );
 		$this->loader->add_action( Dialyra_Hook_Names::get( 'call', 'call_failed' ), $retry_registrar, 'handle_failed_call', 20, 2 );
 		$this->loader->add_action( Dialyra_Hook_Names::get( 'webhook', 'call_event_received' ), $call_sync_listener, 'handle_call_event' );
+		$this->loader->add_action( Dialyra_Hook_Names::get( 'call', 'call_sync_requested' ), $call_sync_listener, 'handle_sync_requested', 10, 3 );
 
 	}
 

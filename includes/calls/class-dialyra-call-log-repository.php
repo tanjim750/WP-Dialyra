@@ -118,11 +118,15 @@ class Dialyra_Call_Log_Repository {
 			'started_at'      => current_time( 'mysql' ),
 			'metadata'        => $this->json_encode(
 				array(
-					'origin'      => sanitize_key( $context['source'] ?? 'originate' ),
-					'status_code' => $response instanceof Dialyra_API_Response ? absint( $response->get_status_code() ) : 0,
-					'error_type'  => $response instanceof Dialyra_API_Response ? sanitize_key( $response->get_error_type() ) : '',
-					'message'     => $response instanceof Dialyra_API_Response ? sanitize_text_field( $response->get_message() ) : '',
-					'response'    => $data,
+					'origin'                 => sanitize_key( $context['source'] ?? 'originate' ),
+					'status_code'            => $response instanceof Dialyra_API_Response ? absint( $response->get_status_code() ) : 0,
+					'error_type'             => $response instanceof Dialyra_API_Response ? sanitize_key( $response->get_error_type() ) : '',
+					'message'                => $response instanceof Dialyra_API_Response ? sanitize_text_field( $response->get_message() ) : '',
+					'retry_id'               => ! empty( $context['retry_id'] ) ? absint( $context['retry_id'] ) : null,
+					'retry_attempt'          => ! empty( $context['retry_attempt'] ) ? absint( $context['retry_attempt'] ) : null,
+					'source_call_session_id' => ! empty( $context['source_call_session_id'] ) ? absint( $context['source_call_session_id'] ) : null,
+					'queue_call_session_id'  => ! empty( $context['queue_call_session_id'] ) ? absint( $context['queue_call_session_id'] ) : null,
+					'response'               => $data,
 				)
 			),
 		);
@@ -187,6 +191,7 @@ class Dialyra_Call_Log_Repository {
 			'order_id'               => $this->nullable_absint( $event['order_id'] ?? null ),
 			'remote_call_log_id'     => $this->nullable_absint( $event['call_log_id'] ?? null ),
 			'call_session_id'        => $this->nullable_absint( $event['call_session_id'] ?? null ),
+			'action_id'              => $this->nullable_text( $event['action_id'] ?? null ),
 			'sip_trunk_id'           => $this->nullable_absint( $event['sip_trunk_id'] ?? null ),
 			'flow_id'                => $this->nullable_absint( $event['flow_id'] ?? null ),
 			'from_number'            => $this->nullable_text( $event['from_number'] ?? null ),
@@ -220,6 +225,75 @@ class Dialyra_Call_Log_Repository {
 		);
 
 		return $this->upsert( $row );
+	}
+
+	/**
+	 * Find a local call log row for a normalized webhook event.
+	 *
+	 * @since    1.0.0
+	 * @param    array    $event    Normalized event.
+	 * @return   int
+	 */
+	public function find_log_id_for_event( $event ) {
+		global $wpdb;
+
+		$event      = is_array( $event ) ? $event : array();
+		$table_name = self::get_table_name();
+
+		$selectors = array(
+			'action_id'          => $this->nullable_text( $event['action_id'] ?? null ),
+			'call_session_id'    => $this->nullable_absint( $event['call_session_id'] ?? null ),
+			'remote_call_log_id' => $this->nullable_absint( $event['call_log_id'] ?? null ),
+		);
+
+		foreach ( $selectors as $column => $value ) {
+			if ( empty( $value ) ) {
+				continue;
+			}
+
+			$format = in_array( $column, array( 'call_session_id', 'remote_call_log_id' ), true ) ? '%d' : '%s';
+			$id     = absint( $wpdb->get_var( $wpdb->prepare( "SELECT id FROM {$table_name} WHERE {$column} = {$format} ORDER BY id ASC LIMIT 1", $value ) ) );
+
+			if ( $id ) {
+				return $id;
+			}
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Increment local retry attempts for a call history row.
+	 *
+	 * @since    1.0.0
+	 * @param    int    $local_log_id    Local call log row ID.
+	 * @return   int
+	 */
+	public function increment_retry_attempts( $local_log_id ) {
+		global $wpdb;
+
+		$local_log_id = absint( $local_log_id );
+
+		if ( ! $local_log_id ) {
+			return 0;
+		}
+
+		$wpdb->query(
+			$wpdb->prepare(
+				'UPDATE ' . self::get_table_name() . ' SET retry_attempts = retry_attempts + 1, updated_at = %s WHERE id = %d',
+				current_time( 'mysql' ),
+				$local_log_id
+			)
+		);
+
+		return absint(
+			$wpdb->get_var(
+				$wpdb->prepare(
+					'SELECT retry_attempts FROM ' . self::get_table_name() . ' WHERE id = %d',
+					$local_log_id
+				)
+			)
+		);
 	}
 
 	/**

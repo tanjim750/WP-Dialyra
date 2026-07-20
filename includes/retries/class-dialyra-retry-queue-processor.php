@@ -177,6 +177,10 @@ class Dialyra_Retry_Queue_Processor {
 			array(
 				'source'                        => 'retry_queue',
 				'suppress_originate_error_hook' => true,
+				'retry_id'                      => $retry_id,
+				'retry_attempt'                 => $current_attempt,
+				'source_call_session_id'        => isset( $row['source_call_session_id'] ) ? absint( $row['source_call_session_id'] ) : 0,
+				'queue_call_session_id'         => isset( $row['call_session_id'] ) ? absint( $row['call_session_id'] ) : 0,
 			)
 		);
 
