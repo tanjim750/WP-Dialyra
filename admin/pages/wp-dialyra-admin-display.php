@@ -28,6 +28,10 @@ $wp_dialyra_pages = array(
 	'test-tools' => 'test-tools.php',
 );
 
+if ( defined( 'WP_DIALYRA_DEBUG_MODE' ) && WP_DIALYRA_DEBUG_MODE ) {
+	$wp_dialyra_pages['logs'] = 'logs.php';
+}
+
 $wp_dialyra_current_page = isset( $_GET['p'] ) ? sanitize_key( wp_unslash( $_GET['p'] ) ) : 'dashboard';
 
 if ( ! isset( $wp_dialyra_pages[ $wp_dialyra_current_page ] ) ) {
@@ -37,10 +41,15 @@ if ( ! isset( $wp_dialyra_pages[ $wp_dialyra_current_page ] ) ) {
 $wp_dialyra_page_path = plugin_dir_path( __FILE__ ) . 'views/' . $wp_dialyra_pages[ $wp_dialyra_current_page ];
 $wp_dialyra_is_setup_complete = class_exists( 'Dialyra_Auth_Manager' ) ? Dialyra_Auth_Manager::is_setup_complete() : false;
 $wp_dialyra_is_logged_in = class_exists( 'Dialyra_Auth_Manager' ) ? Dialyra_Auth_Manager::is_logged_in() : false;
+$wp_dialyra_webhook_health = class_exists( 'Dialyra_Webhook_Health_Check' ) ? Dialyra_Webhook_Health_Check::get_stored_status() : array();
+$wp_dialyra_webhook_health_status = ! empty( $wp_dialyra_webhook_health['status'] ) ? sanitize_key( $wp_dialyra_webhook_health['status'] ) : 'unknown';
+$wp_dialyra_webhook_health_label = class_exists( 'Dialyra_Webhook_Health_Check' ) ? Dialyra_Webhook_Health_Check::get_status_label( $wp_dialyra_webhook_health_status ) : __( 'Not checked', 'wp-dialyra' );
+$wp_dialyra_webhook_health_checked = ! empty( $wp_dialyra_webhook_health['last_checked_at'] ) ? date_i18n( 'M j, Y g:i A', strtotime( $wp_dialyra_webhook_health['last_checked_at'] ) ) : __( 'Never', 'wp-dialyra' );
+$wp_dialyra_is_webhook_healthy = ! empty( $wp_dialyra_webhook_health['healthy'] );
 $wp_dialyra_footer_api_status = $wp_dialyra_is_logged_in ? __( 'API health: Connected', 'wp-dialyra' ) : __( 'API health: Not connected', 'wp-dialyra' );
-$wp_dialyra_footer_webhook_status = $wp_dialyra_is_setup_complete ? __( 'Webhook: Ready', 'wp-dialyra' ) : __( 'Webhook: Waiting setup', 'wp-dialyra' );
+$wp_dialyra_footer_webhook_status = $wp_dialyra_is_setup_complete ? sprintf( /* translators: %s: webhook health status. */ __( 'Webhook: %s', 'wp-dialyra' ), $wp_dialyra_webhook_health_label ) : __( 'Webhook: Waiting setup', 'wp-dialyra' );
 $wp_dialyra_footer_api_class = $wp_dialyra_is_logged_in ? 'wp-dialyra-footer-status--ready' : 'wp-dialyra-footer-status--warning';
-$wp_dialyra_footer_webhook_class = $wp_dialyra_is_setup_complete ? 'wp-dialyra-footer-status--ready' : 'wp-dialyra-footer-status--warning';
+$wp_dialyra_footer_webhook_class = $wp_dialyra_is_setup_complete && $wp_dialyra_is_webhook_healthy ? 'wp-dialyra-footer-status--ready' : 'wp-dialyra-footer-status--warning';
 ?>
 
 <div class="wrap wp-dialyra-admin">
@@ -71,6 +80,17 @@ $wp_dialyra_footer_webhook_class = $wp_dialyra_is_setup_complete ? 'wp-dialyra-f
 	</header>
 
 	<main class="wp-dialyra-main">
+		<?php if ( $wp_dialyra_is_setup_complete && ! $wp_dialyra_is_webhook_healthy && 'login' !== $wp_dialyra_current_page ) : ?>
+			<div class="wp-dialyra-fuse-warning wp-dialyra-fuse-warning--warning wp-dialyra-webhook-health-warning">
+				<span class="dashicons dashicons-warning" aria-hidden="true"></span>
+				<p>
+					<strong><?php esc_html_e( 'Dialyra webhook is not reachable.', 'wp-dialyra' ); ?></strong>
+					<?php esc_html_e( 'Order confirmation and call-result processing may not work correctly.', 'wp-dialyra' ); ?>
+					<?php echo esc_html( sprintf( /* translators: 1: status label, 2: checked date. */ __( 'Status: %1$s. Last checked: %2$s.', 'wp-dialyra' ), $wp_dialyra_webhook_health_label, $wp_dialyra_webhook_health_checked ) ); ?>
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=test-tools' ) ); ?>"><?php esc_html_e( 'Run Webhook Test', 'wp-dialyra' ); ?></a>
+				</p>
+			</div>
+		<?php endif; ?>
 		<?php require $wp_dialyra_page_path; ?>
 	</main>
 

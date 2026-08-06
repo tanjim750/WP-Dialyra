@@ -55,7 +55,7 @@ class Dialyra_API_Config {
      * @since    1.0.0
      */
     public function __construct() {
-        $this->base_url    = defined( 'DIALYRA_API_BASE_URL' ) ? DIALYRA_API_BASE_URL : 'http://127.0.0.1:5001/api';
+        $this->base_url    = defined( 'DIALYRA_API_BASE_URL' ) ? DIALYRA_API_BASE_URL : 'https://api.dialyra.it.com/api';
         $this->api_version = defined( 'DIALYRA_API_VERSION' ) ? DIALYRA_API_VERSION : 'v2';
         $this->timeout     = defined( 'DIALYRA_API_TIMEOUT' ) ? absint( DIALYRA_API_TIMEOUT ) : 30;
 

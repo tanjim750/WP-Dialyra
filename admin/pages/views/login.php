@@ -55,7 +55,7 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 				$wp_dialyra_business_manager = $wp_dialyra_plugin ? $wp_dialyra_plugin->get_business_manager() : null;
 
 				if ( $wp_dialyra_business_manager ) {
-					$wp_dialyra_business_manager->save_connected_business_data( $wp_dialyra_login_data['business'] );
+					$wp_dialyra_business_manager->save_connected_business_data( $wp_dialyra_login_data['business'], 'login' );
 				}
 			}
 

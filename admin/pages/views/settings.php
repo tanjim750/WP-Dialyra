@@ -192,7 +192,17 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 			) : false;
 
 			if ( empty( $wp_dialyra_error ) && $response && method_exists( $response, 'is_successful' ) && $response->is_successful() ) {
-				$wp_dialyra_success = esc_html__( 'Business details saved successfully.', 'wp-dialyra' );
+				if ( method_exists( $wp_dialyra_business_manager, 'ensure_business_webhook' ) ) {
+					$wp_dialyra_webhook_result = $wp_dialyra_business_manager->ensure_business_webhook( $wp_dialyra_business_id );
+
+					if ( is_array( $wp_dialyra_webhook_result ) && empty( $wp_dialyra_webhook_result['success'] ) ) {
+						$wp_dialyra_error = ! empty( $wp_dialyra_webhook_result['message'] ) ? $wp_dialyra_webhook_result['message'] : esc_html__( 'Webhook subscription could not be prepared.', 'wp-dialyra' );
+					}
+				}
+
+				if ( empty( $wp_dialyra_error ) ) {
+					$wp_dialyra_success = esc_html__( 'Business details saved successfully.', 'wp-dialyra' );
+				}
 			} elseif ( empty( $wp_dialyra_error ) ) {
 				$wp_dialyra_error = $response && method_exists( $response, 'get_message' ) ? $response->get_message() : esc_html__( 'Business details could not be saved.', 'wp-dialyra' );
 			}
@@ -217,7 +227,14 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 
 			if ( $response && method_exists( $response, 'is_successful' ) && $response->is_successful() ) {
 				$wp_dialyra_business_id = $wp_dialyra_business_manager->get_connected_business_id();
-				$wp_dialyra_success     = esc_html__( 'Business created and connected successfully.', 'wp-dialyra' );
+				if ( method_exists( $wp_dialyra_business_manager, 'ensure_business_webhook' ) ) {
+					$wp_dialyra_webhook_result = $wp_dialyra_business_manager->ensure_business_webhook( $wp_dialyra_business_id );
+
+					if ( is_array( $wp_dialyra_webhook_result ) && empty( $wp_dialyra_webhook_result['success'] ) ) {
+						$wp_dialyra_error = ! empty( $wp_dialyra_webhook_result['message'] ) ? $wp_dialyra_webhook_result['message'] : esc_html__( 'Webhook subscription could not be prepared.', 'wp-dialyra' );
+					}
+				}
+				$wp_dialyra_success = empty( $wp_dialyra_error ) ? esc_html__( 'Business created and connected successfully.', 'wp-dialyra' ) : '';
 			} else {
 				$wp_dialyra_error = $response && method_exists( $response, 'get_message' ) ? $response->get_message() : esc_html__( 'Business could not be created.', 'wp-dialyra' );
 			}
@@ -297,12 +314,13 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 			$wp_dialyra_success        = esc_html__( 'Retry policy saved successfully.', 'wp-dialyra' );
 		}
 	} elseif ( 'save_business_hours' === $settings_action ) {
-		$business_hours_mode = ! empty( $_POST['dialyra_business_hours_always_active'] ) ? 'always_active' : 'scheduled';
+		$posted_business_hours_mode = isset( $_POST['dialyra_business_hours_mode'] ) ? sanitize_key( wp_unslash( $_POST['dialyra_business_hours_mode'] ) ) : '';
+		$business_hours_mode = in_array( $posted_business_hours_mode, array( 'always_active', 'scheduled' ), true ) ? $posted_business_hours_mode : ( ! empty( $_POST['dialyra_business_hours_always_active'] ) ? 'always_active' : 'scheduled' );
 		$business_hours_days = isset( $_POST['dialyra_business_hours_days'] ) && is_array( $_POST['dialyra_business_hours_days'] ) ? array_map( 'sanitize_key', wp_unslash( $_POST['dialyra_business_hours_days'] ) ) : array();
 		$business_hours_days = array_values( array_intersect( $business_hours_days, array_keys( $wp_dialyra_business_days ) ) );
 		$business_hours_days = ! empty( $business_hours_days ) ? $business_hours_days : array( 'all' );
 
-		if ( 'always_active' === $business_hours_mode ) {
+		if ( 'always_active' === $business_hours_mode || in_array( 'all', $business_hours_days, true ) ) {
 			$business_hours_days = array( 'all' );
 		}
 
@@ -362,7 +380,7 @@ if ( $wp_dialyra_flow_manager && $wp_dialyra_business_id ) {
 
 	if ( $flows_response && method_exists( $flows_response, 'is_successful' ) && $flows_response->is_successful() ) {
 		$wp_dialyra_flows = array_values( array_filter( array_map( $wp_dialyra_normalize_flow, $wp_dialyra_extract_response_items( $flows_response ) ), static function ( $flow ) {
-			return ! empty( $flow['id'] );
+			return ! empty( $flow['id'] ) && 'archived' !== $flow['status'];
 		} ) );
 	} elseif ( $flows_response && method_exists( $flows_response, 'get_message' ) ) {
 		$wp_dialyra_flow_fetch_error = $flows_response->get_message();
@@ -415,6 +433,9 @@ $wp_dialyra_business_hours_timezone = ! empty( $wp_dialyra_business_hours_settin
 $wp_dialyra_selected_days = ! empty( $wp_dialyra_business_hours_settings['days'] ) && is_array( $wp_dialyra_business_hours_settings['days'] ) ? array_map( 'sanitize_key', $wp_dialyra_business_hours_settings['days'] ) : array( 'all' );
 $wp_dialyra_selected_days = array_values( array_intersect( $wp_dialyra_selected_days, array_keys( $wp_dialyra_business_days ) ) );
 $wp_dialyra_selected_days = ! empty( $wp_dialyra_selected_days ) ? $wp_dialyra_selected_days : array( 'all' );
+if ( 'always_active' === $wp_dialyra_business_hours_mode || in_array( 'all', $wp_dialyra_selected_days, true ) ) {
+	$wp_dialyra_selected_days = array( 'all' );
+}
 $wp_dialyra_business_hours_open = ! empty( $wp_dialyra_business_hours_settings['open_time'] ) ? sanitize_text_field( $wp_dialyra_business_hours_settings['open_time'] ) : '09:00';
 $wp_dialyra_business_hours_close = ! empty( $wp_dialyra_business_hours_settings['close_time'] ) ? sanitize_text_field( $wp_dialyra_business_hours_settings['close_time'] ) : '18:00';
 $wp_dialyra_status_mapping_settings = isset( $wp_dialyra_setup_settings['order_status_map'] ) && is_array( $wp_dialyra_setup_settings['order_status_map'] ) ? $wp_dialyra_setup_settings['order_status_map'] : array();
@@ -699,6 +720,7 @@ $wp_dialyra_skip_call_statuses = array_values( array_intersect( $wp_dialyra_skip
 
 		<form class="wp-dialyra-settings-card" method="post" action="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=settings' ) ); ?>" data-dialyra-business-hours-group>
 			<?php wp_nonce_field( 'wp-dialyra-settings', 'wp_dialyra_settings_nonce' ); ?>
+			<input type="hidden" name="dialyra_business_hours_mode" value="<?php echo esc_attr( $wp_dialyra_business_hours_mode ); ?>" data-dialyra-business-hours-mode>
 			<div class="wp-dialyra-settings-card__head">
 				<span aria-hidden="true">06</span>
 				<div>

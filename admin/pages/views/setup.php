@@ -93,6 +93,7 @@ $wp_dialyra_setup_flows = array();
 $wp_dialyra_account_fetch_error = null;
 $wp_dialyra_business_fetch_error = null;
 $wp_dialyra_flow_fetch_error = null;
+$wp_dialyra_webhook_health_warning = null;
 $wp_dialyra_post_connected_business_id = 0;
 $wp_dialyra_site_token_data = array();
 
@@ -200,7 +201,7 @@ if ( $wp_dialyra_api_endpoints && class_exists( 'Dialyra_Auth_Manager' ) && Dial
 			$wp_dialyra_account_business_id = isset( $wp_dialyra_account_data['business']['id'] ) ? absint( $wp_dialyra_account_data['business']['id'] ) : 0;
 
 			if ( ! $wp_dialyra_current_business_id || $wp_dialyra_current_business_id === $wp_dialyra_account_business_id ) {
-				$wp_dialyra_business_manager->save_connected_business_data( $wp_dialyra_account_data['business'] );
+				$wp_dialyra_business_manager->save_connected_business_data( $wp_dialyra_account_data['business'], 'account' );
 			}
 		}
 	} elseif ( $wp_dialyra_account_response && ( 401 === $wp_dialyra_account_response->get_status_code() || 'unauthenticated' === $wp_dialyra_account_response->get_error_type() ) ) {
@@ -280,6 +281,20 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 			$error_message = esc_html__( 'Access token could not be created because no business is connected.', 'wp-dialyra' );
 		} elseif ( is_object( $wp_dialyra_token_response ) && method_exists( $wp_dialyra_token_response, 'is_successful' ) && ! $wp_dialyra_token_response->is_successful() ) {
 			$error_message = $wp_dialyra_token_response->get_message();
+		}
+
+		if ( empty( $error_message ) && $wp_dialyra_business_manager && method_exists( $wp_dialyra_business_manager, 'ensure_business_webhook' ) ) {
+			$wp_dialyra_webhook_result = $wp_dialyra_business_manager->ensure_business_webhook( $wp_dialyra_connected_business_id );
+
+			if ( is_array( $wp_dialyra_webhook_result ) && empty( $wp_dialyra_webhook_result['success'] ) ) {
+				$error_message = ! empty( $wp_dialyra_webhook_result['message'] ) ? $wp_dialyra_webhook_result['message'] : esc_html__( 'Webhook subscription could not be prepared.', 'wp-dialyra' );
+			} elseif ( is_array( $wp_dialyra_webhook_result ) && ! empty( $wp_dialyra_webhook_result['success'] ) ) {
+				$wp_dialyra_webhook_health_state = isset( $wp_dialyra_webhook_result['health'] ) && is_array( $wp_dialyra_webhook_result['health'] ) ? $wp_dialyra_webhook_result['health'] : array();
+
+				if ( empty( $wp_dialyra_webhook_health_state['healthy'] ) ) {
+					$wp_dialyra_webhook_health_warning = ! empty( $wp_dialyra_webhook_health_state['last_error_message'] ) ? $wp_dialyra_webhook_health_state['last_error_message'] : esc_html__( 'Dialyra webhook health check did not pass. You can continue, but webhook events may not reach this site.', 'wp-dialyra' );
+				}
+			}
 		}
 	}
 
@@ -467,6 +482,13 @@ if ( $wp_dialyra_flow_manager && $wp_dialyra_selected_business_id ) {
 			<div class="wp-dialyra-fuse-warning wp-dialyra-fuse-warning--warning">
 				<span class="dashicons dashicons-info-outline" aria-hidden="true"></span>
 				<p><?php echo esc_html( $wp_dialyra_flow_fetch_error ); ?></p>
+			</div>
+		<?php endif; ?>
+
+		<?php if ( ! empty( $wp_dialyra_webhook_health_warning ) ) : ?>
+			<div class="wp-dialyra-fuse-warning wp-dialyra-fuse-warning--warning">
+				<span class="dashicons dashicons-warning" aria-hidden="true"></span>
+				<p><?php echo esc_html( $wp_dialyra_webhook_health_warning ); ?></p>
 			</div>
 		<?php endif; ?>
 

@@ -30,6 +30,12 @@ class Wp_Dialyra_Deactivator {
 	 * @since    1.0.0
 	 */
 	public static function deactivate() {
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/constant.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/events/class-dialyra-events.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/events/class-dialyra-hook-names.php';
+		require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/entrypoints/class-dialyra-scheduler-entrypoints.php';
+
+		Dialyra_Scheduler_Entrypoints::deactivate();
 
 	}
 
