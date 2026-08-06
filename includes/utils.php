@@ -169,7 +169,7 @@ class Wp_Dialyra_Utils {
 	 */
 	public static function get_api_defaults() {
 		return array(
-			'base_url' => 'http://127.0.0.1:5001/api',
+			'base_url' => defined( 'DIALYRA_API_BASE_URL' ) ? DIALYRA_API_BASE_URL : 'https://api.dialyra.it.com/api',
 			'version'  => 'v2',
 			'timeout'  => 30,
 		);

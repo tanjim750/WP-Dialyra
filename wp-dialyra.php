@@ -14,7 +14,7 @@
  *
  * @wordpress-plugin
  * Plugin Name:       WP Dialyra
- * Plugin URI:        https://dialyra.com
+ * Plugin URI:        https://dialyra.it.com
  * Description:       The purpose of the WP Dialyra is to connect a WooCommerce store with Dialyra so the store can automatically and manually place customer calls around orders.
  * Version:           1.0.0
  * Author:            Trizync Solution
@@ -41,7 +41,7 @@ define( 'WP_DIALYRA_VERSION', '1.0.0' );
  * Enable plugin-owned audit logging and the hidden audit log page.
  */
 if ( ! defined( 'WP_DIALYRA_DEBUG_MODE' ) ) {
-	define( 'WP_DIALYRA_DEBUG_MODE', true );
+	define( 'WP_DIALYRA_DEBUG_MODE', false );
 }
 
 /**
@@ -52,7 +52,7 @@ require_once plugin_dir_path( __FILE__ ) . 'includes/constant.php';
 /**
  * Default SIP domain agents use when registering extensions in softphone apps.
  */
-define( 'WP_DIALYRA_SIP_DOMAIN', 'dialyra.com' );
+define( 'WP_DIALYRA_SIP_DOMAIN', 'dialyra.it.com' );
 
 /**
  * The code that runs during plugin activation.

@@ -17,6 +17,18 @@ if ( ! defined( 'WP_DIALYRA_OPTION_ACCESS_TOKEN' ) ) {
 	define( 'WP_DIALYRA_OPTION_ACCESS_TOKEN', 'dialyra_access_token' );
 }
 
+if ( ! defined( 'WP_DIALYRA_LOCAL_API_BASE_URL' ) ) {
+	define( 'WP_DIALYRA_LOCAL_API_BASE_URL', 'http://127.0.0.1:5001/api' );
+}
+
+if ( ! defined( 'WP_DIALYRA_LIVE_API_BASE_URL' ) ) {
+	define( 'WP_DIALYRA_LIVE_API_BASE_URL', 'https://api.dialyra.it.com/api' );
+}
+
+if ( ! defined( 'DIALYRA_API_BASE_URL' ) ) {
+	define( 'DIALYRA_API_BASE_URL', ( defined( 'WP_DIALYRA_DEBUG_MODE' ) && WP_DIALYRA_DEBUG_MODE ) ? WP_DIALYRA_LOCAL_API_BASE_URL : WP_DIALYRA_LIVE_API_BASE_URL );
+}
+
 if ( ! defined( 'WP_DIALYRA_OPTION_REFRESH_TOKEN' ) ) {
 	define( 'WP_DIALYRA_OPTION_REFRESH_TOKEN', 'dialyra_refresh_token' );
 }

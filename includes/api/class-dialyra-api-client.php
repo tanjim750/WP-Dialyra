@@ -227,7 +227,7 @@ class Dialyra_API_Client {
      * @return   string
      */
     private function build_versioned_url( $api_version, $endpoint ) {
-        $base_url = trailingslashit( esc_url_raw( defined( 'DIALYRA_API_BASE_URL' ) ? DIALYRA_API_BASE_URL : 'http://127.0.0.1:5001/api' ) );
+        $base_url = trailingslashit( esc_url_raw( defined( 'DIALYRA_API_BASE_URL' ) ? DIALYRA_API_BASE_URL : 'https://api.dialyra.it.com/api' ) );
 
         return $base_url . trim( sanitize_text_field( $api_version ), '/' ) . '/' . ltrim( $endpoint, '/' );
     }
