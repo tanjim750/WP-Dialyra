@@ -724,7 +724,13 @@ $wp_dialyra_skip_call_statuses = array_values( array_intersect( $wp_dialyra_skip
 			<div class="wp-dialyra-settings-card__head">
 				<span aria-hidden="true">06</span>
 				<div>
-					<h3><?php esc_html_e( 'Business hours', 'wp-dialyra' ); ?></h3>
+					<?php $wp_dialyra_calling_available = ( new Dialyra_Business_Hours() )->is_calling_allowed_now(); ?>
+					<div class="wp-dialyra-business-hours-title">
+						<h3><?php esc_html_e( 'Business hours', 'wp-dialyra' ); ?></h3>
+						<span class="wp-dialyra-result <?php echo $wp_dialyra_calling_available ? 'wp-dialyra-result--success' : 'wp-dialyra-result--danger'; ?>" title="<?php esc_attr_e( 'Current calling availability based on saved business hours.', 'wp-dialyra' ); ?>">
+							<?php echo esc_html( $wp_dialyra_calling_available ? __( 'Available', 'wp-dialyra' ) : __( 'Unavailable', 'wp-dialyra' ) ); ?>
+						</span>
+					</div>
 					<p><?php esc_html_e( 'Queue calls outside your operating schedule.', 'wp-dialyra' ); ?></p>
 				</div>
 			</div>

@@ -1046,6 +1046,13 @@
 	white-space: nowrap;
 }
 
+.wp-dialyra-business-hours-title {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+}
+
 .wp-dialyra-result {
 	display: inline-flex;
 	padding: 6px 10px;

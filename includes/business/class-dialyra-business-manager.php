@@ -394,7 +394,12 @@ class Dialyra_Business_Manager {
 	 * @return   bool
 	 */
 	public function save_setup_settings( $settings ) {
-		$settings = array_replace_recursive( $this->get_setup_settings(), $this->sanitize_payload( $settings ) );
+		$posted_settings = $this->sanitize_payload( $settings );
+		$settings = array_replace_recursive( $this->get_setup_settings(), $posted_settings );
+
+		if ( isset( $posted_settings['business_hours']['days'] ) && is_array( $posted_settings['business_hours']['days'] ) ) {
+			$settings['business_hours']['days'] = array_values( $posted_settings['business_hours']['days'] );
+		}
 
 		$this->sync_setup_setting_options( $settings );
 

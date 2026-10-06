@@ -21,31 +21,9 @@ class Dialyra_Business_Hours {
 	 */
 	public function is_calling_allowed_now() {
 		$settings = $this->get_settings();
-		$mode     = sanitize_key( $settings['availability_mode'] ?? 'always_active' );
+		$now      = new DateTimeImmutable( 'now', $this->get_timezone( $settings ) );
 
-		if ( $this->is_always_active_mode( $mode ) ) {
-			return true;
-		}
-
-		if ( 'scheduled' !== $mode ) {
-			return false;
-		}
-
-		$now       = new DateTimeImmutable( 'now', $this->get_timezone( $settings ) );
-		$day_key   = strtolower( $now->format( 'D' ) );
-		$day_key   = 'thu' === $day_key ? 'thu' : substr( $day_key, 0, 3 );
-		$days      = ! empty( $settings['days'] ) && is_array( $settings['days'] ) ? array_map( 'sanitize_key', $settings['days'] ) : array( 'all' );
-		$open_time = sanitize_text_field( $settings['open_time'] ?? '09:00' );
-		$close_time = sanitize_text_field( $settings['close_time'] ?? '18:00' );
-
-		if ( ! in_array( 'all', $days, true ) && ! in_array( $day_key, $days, true ) ) {
-			return false;
-		}
-
-		$open  = DateTimeImmutable::createFromFormat( 'Y-m-d H:i', $now->format( 'Y-m-d' ) . ' ' . $open_time, $this->get_timezone( $settings ) );
-		$close = DateTimeImmutable::createFromFormat( 'Y-m-d H:i', $now->format( 'Y-m-d' ) . ' ' . $close_time, $this->get_timezone( $settings ) );
-
-		return $open && $close && $now >= $open && $now <= $close;
+		return 'open' === $this->get_availability_reason( $settings, $now );
 	}
 
 	/**
@@ -63,26 +41,26 @@ class Dialyra_Business_Hours {
 
 		$timezone  = $this->get_timezone( $settings );
 		$now       = new DateTimeImmutable( 'now', $timezone );
-		$days      = ! empty( $settings['days'] ) && is_array( $settings['days'] ) ? array_map( 'sanitize_key', $settings['days'] ) : array( 'all' );
-		$open_time = sanitize_text_field( $settings['open_time'] ?? '09:00' );
+
+		if ( 'open' === $this->get_availability_reason( $settings, $now ) ) {
+			return current_time( 'mysql' );
+		}
 
 		for ( $offset = 0; $offset <= 14; $offset++ ) {
 			$candidate = $now->modify( '+' . $offset . ' days' );
-			$day_key   = strtolower( $candidate->format( 'D' ) );
-			$day_key   = 'thu' === $day_key ? 'thu' : substr( $day_key, 0, 3 );
-
-			if ( ! in_array( 'all', $days, true ) && ! in_array( $day_key, $days, true ) ) {
+			if ( ! $this->is_selected_day( $settings, $candidate ) ) {
 				continue;
 			}
 
-			$call_time = DateTimeImmutable::createFromFormat( 'Y-m-d H:i', $candidate->format( 'Y-m-d' ) . ' ' . $open_time, $timezone );
+			$window    = $this->get_window( $settings, $candidate );
+			$call_time = $window ? $window['open'] : null;
 
 			if ( $call_time && $call_time > $now ) {
-				return $call_time->format( 'Y-m-d H:i:s' );
+				return $call_time->setTimezone( wp_timezone() )->format( 'Y-m-d H:i:s' );
 			}
 		}
 
-		return $now->modify( '+1 day' )->format( 'Y-m-d H:i:s' );
+		return $now->modify( '+1 day' )->setTimezone( wp_timezone() )->format( 'Y-m-d H:i:s' );
 	}
 
 	/**
@@ -98,6 +76,8 @@ class Dialyra_Business_Hours {
 		$mode     = sanitize_key( $settings['availability_mode'] ?? 'always_active' );
 
 		return array(
+			'is_calling_allowed' => 'open' === $this->get_availability_reason( $settings, $now ),
+			'availability_reason' => $this->get_availability_reason( $settings, $now ),
 			'availability_mode' => $mode,
 			'is_always_active'  => $this->is_always_active_mode( $mode ),
 			'timezone'          => $timezone->getName(),
@@ -124,7 +104,65 @@ class Dialyra_Business_Hours {
 			$settings = is_array( $setup ) && isset( $setup['business_hours'] ) && is_array( $setup['business_hours'] ) ? $setup['business_hours'] : array();
 		}
 
-		return array_replace_recursive( $defaults, is_array( $settings ) ? $settings : array() );
+		return array_replace( $defaults, is_array( $settings ) ? $settings : array() );
+	}
+
+	private function is_selected_day( $settings, DateTimeImmutable $date ) {
+		$days = ! empty( $settings['days'] ) && is_array( $settings['days'] ) ? array_map( 'sanitize_key', $settings['days'] ) : array( 'all' );
+
+		return in_array( 'all', $days, true ) || in_array( strtolower( $date->format( 'D' ) ), $days, true );
+	}
+
+	private function get_window( $settings, DateTimeImmutable $date ) {
+		$times = array(
+			'open'  => sanitize_text_field( $settings['open_time'] ?? '09:00' ),
+			'close' => sanitize_text_field( $settings['close_time'] ?? '18:00' ),
+		);
+		$window = array();
+
+		foreach ( $times as $key => $time ) {
+			if ( ! preg_match( '/^([01][0-9]|2[0-3]):([0-5][0-9])(?::([0-5][0-9]))?$/', $time, $parts ) ) {
+				return null;
+			}
+
+			$window[ $key ] = $date->setTime( (int) $parts[1], (int) $parts[2], (int) ( $parts[3] ?? 0 ) );
+		}
+
+		if ( $window['close'] == $window['open'] ) {
+			return null;
+		}
+
+		if ( $window['close'] < $window['open'] ) {
+			$window['close'] = $window['close']->modify( '+1 day' );
+		}
+
+		return $window;
+	}
+
+	private function get_availability_reason( $settings, DateTimeImmutable $now ) {
+		$mode = sanitize_key( $settings['availability_mode'] ?? 'always_active' );
+
+		if ( $this->is_always_active_mode( $mode ) ) {
+			return 'open';
+		}
+
+		if ( 'scheduled' !== $mode ) {
+			return 'invalid_availability_mode';
+		}
+
+		if ( ! $this->get_window( $settings, $now ) ) {
+			return 'invalid_time_window';
+		}
+
+		foreach ( array( $now, $now->modify( '-1 day' ) ) as $date ) {
+			$window = $this->get_window( $settings, $date );
+
+			if ( $this->is_selected_day( $settings, $date ) && $now >= $window['open'] && $now < $window['close'] ) {
+				return 'open';
+			}
+		}
+
+		return $this->is_selected_day( $settings, $now ) ? 'outside_operating_hours' : 'day_not_selected';
 	}
 
 	/**
