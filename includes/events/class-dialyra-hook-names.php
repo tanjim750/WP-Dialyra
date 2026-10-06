@@ -55,6 +55,7 @@ class Dialyra_Hook_Names {
 				'call_sync_requested'   => self::hook( 'CALL_SYNC_REQUESTED', 'dialyra_call_sync_requested' ),
 			),
 			'scheduler' => array(
+				'sync_call_history'   => self::hook( 'SYNC_CALL_HISTORY', 'dialyra_sync_call_history' ),
 				'process_call_queue'  => self::hook( 'PROCESS_CALL_QUEUE', 'dialyra_process_call_queue' ),
 				'process_retry_queue' => self::hook( 'PROCESS_RETRY_QUEUE', 'dialyra_process_retry_queue' ),
 			),

@@ -13,7 +13,7 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
-if ( ! defined( 'WP_DIALYRA_OPTION_ACCESS_TOKEN' ) ) {
+if ( ! defined( 'WP_DIALYRA_OPTION_ACCESS_TOKEN' ) || ! defined( 'WP_DIALYRA_OPTION_AUTH_BASE_URL' ) ) {
 	require_once dirname( __DIR__ ) . '/constant.php';
 }
 
@@ -23,6 +23,8 @@ class Dialyra_Auth_Manager {
     const REFRESH_TOKEN_OPTION  = WP_DIALYRA_OPTION_REFRESH_TOKEN;
     const BUSINESS_ID_OPTION    = WP_DIALYRA_OPTION_BUSINESS_ID;
     const USER_INFO_OPTION      = WP_DIALYRA_OPTION_USER_INFO;
+    const LAST_AUTH_CHECK_OPTION = WP_DIALYRA_OPTION_LAST_AUTH_CHECK_AT;
+    const AUTH_BASE_URL_OPTION  = WP_DIALYRA_OPTION_AUTH_BASE_URL;
     const SITE_TOKEN_OPTION     = WP_DIALYRA_OPTION_SITE_ACCESS_TOKEN;
     const SETUP_SETTINGS_OPTION = WP_DIALYRA_OPTION_SETUP_SETTINGS;
 
@@ -34,7 +36,10 @@ class Dialyra_Auth_Manager {
      * @return   bool      True on success, false on failure.
      */
     public static function save_access_token( $token ) {
-        return update_option( self::ACCESS_TOKEN_OPTION, sanitize_text_field( $token ), false );
+        $saved = update_option( self::ACCESS_TOKEN_OPTION, self::normalize_token( $token ), false );
+        update_option( self::AUTH_BASE_URL_OPTION, self::current_api_base_url(), false );
+
+        return $saved;
     }
 
     /**
@@ -44,7 +49,13 @@ class Dialyra_Auth_Manager {
      * @return   string|false    The access token, or false if not found.
      */
     public static function get_access_token() {
-        return get_option( self::ACCESS_TOKEN_OPTION );
+        if ( self::auth_base_url_changed() ) {
+            self::clear_authentication();
+
+            return false;
+        }
+
+        return self::normalize_token( get_option( self::ACCESS_TOKEN_OPTION ) );
     }
 
     /**
@@ -54,6 +65,8 @@ class Dialyra_Auth_Manager {
      * @return   bool    True on success, false on failure.
      */
     public static function remove_access_token() {
+        delete_option( self::AUTH_BASE_URL_OPTION );
+
         return delete_option( self::ACCESS_TOKEN_OPTION );
     }
 
@@ -65,7 +78,7 @@ class Dialyra_Auth_Manager {
      * @return   bool      True on success, false on failure.
      */
     public static function save_refresh_token( $token ) {
-        return update_option( self::REFRESH_TOKEN_OPTION, sanitize_text_field( $token ), false );
+        return update_option( self::REFRESH_TOKEN_OPTION, self::normalize_token( $token ), false );
     }
 
     /**
@@ -75,7 +88,7 @@ class Dialyra_Auth_Manager {
      * @return   string|false    The refresh token, or false if not found.
      */
     public static function get_refresh_token() {
-        return get_option( self::REFRESH_TOKEN_OPTION );
+        return self::normalize_token( get_option( self::REFRESH_TOKEN_OPTION ) );
     }
 
     /**
@@ -212,7 +225,98 @@ class Dialyra_Auth_Manager {
         self::remove_refresh_token();
         self::remove_business_id();
         self::remove_user_info();
+        delete_option( self::LAST_AUTH_CHECK_OPTION );
         delete_option( self::SITE_TOKEN_OPTION );
+    }
+
+    /**
+     * Mark the current time as the latest successful auth validation.
+     *
+     * @since    1.0.0
+     * @return   bool
+     */
+    public static function touch_auth_check() {
+        return update_option( self::LAST_AUTH_CHECK_OPTION, time(), false );
+    }
+
+    /**
+     * Determine whether the auth session should be checked again.
+     *
+     * @since    1.0.0
+     * @return   bool
+     */
+    public static function should_validate_session() {
+        $last_checked_at = absint( get_option( self::LAST_AUTH_CHECK_OPTION, 0 ) );
+        $interval        = defined( 'WP_DIALYRA_AUTH_CHECK_INTERVAL' ) ? absint( WP_DIALYRA_AUTH_CHECK_INTERVAL ) : 15 * 60;
+
+        return ! $last_checked_at || ( time() - $last_checked_at ) >= max( 60, $interval );
+    }
+
+    /**
+     * Validate the stored API session when the check interval has elapsed.
+     *
+     * Temporary network/API availability failures are treated as soft failures
+     * so an otherwise valid local session is not destroyed by a transient outage.
+     *
+     * @since    1.0.0
+     * @param    Dialyra_API_Endpoints|null    $api_endpoints    API endpoints service.
+     * @param    bool                          $force            Whether to skip interval cache.
+     * @return   array
+     */
+    public static function validate_session_if_due( $api_endpoints = null, $force = false ) {
+        if ( ! self::is_logged_in() ) {
+            return self::auth_validation_result( false, 'missing_token' );
+        }
+
+        if ( ! $force && ! self::should_validate_session() ) {
+            return self::auth_validation_result( true, 'cached' );
+        }
+
+        if ( ! $api_endpoints || ! method_exists( $api_endpoints, 'get_me' ) ) {
+            return self::auth_validation_result( true, 'service_unavailable' );
+        }
+
+        $response = $api_endpoints->get_me();
+
+        if ( $response && method_exists( $response, 'is_successful' ) && $response->is_successful() ) {
+            if ( self::response_contains_inactive_account( $response->get_data() ) ) {
+                self::clear_authentication();
+
+                return self::auth_validation_result( false, 'inactive_account' );
+            }
+
+            self::store_auth_me_response( $response->get_data() );
+            self::touch_auth_check();
+
+            return self::auth_validation_result( true, 'validated' );
+        }
+
+        $status_code = $response && method_exists( $response, 'get_status_code' ) ? absint( $response->get_status_code() ) : 0;
+
+        if ( in_array( $status_code, array( 401, 404 ), true ) && self::refresh_access_token( $api_endpoints ) ) {
+            $retry_response = $api_endpoints->get_me();
+
+            if ( $retry_response && method_exists( $retry_response, 'is_successful' ) && $retry_response->is_successful() ) {
+                if ( self::response_contains_inactive_account( $retry_response->get_data() ) ) {
+                    self::clear_authentication();
+
+                    return self::auth_validation_result( false, 'inactive_account' );
+                }
+
+                self::store_auth_me_response( $retry_response->get_data() );
+                self::touch_auth_check();
+
+                return self::auth_validation_result( true, 'refreshed' );
+            }
+        }
+
+        if ( in_array( $status_code, array( 401, 403, 404 ), true ) ) {
+            self::clear_authentication();
+
+            return self::auth_validation_result( false, self::auth_failure_reason_for_status( $status_code ) );
+        }
+
+        return self::auth_validation_result( true, 'soft_failure' );
     }
 
     /**
@@ -278,6 +382,232 @@ class Dialyra_Auth_Manager {
         $subpage = isset( $_GET['p'] ) ? sanitize_key( wp_unslash( $_GET['p'] ) ) : '';
 
         return 'wp-dialyra' === $page && 'setup' === $subpage;
+    }
+
+    /**
+     * Refresh the access token using the stored refresh token.
+     *
+     * @since    1.0.0
+     * @param    Dialyra_API_Endpoints    $api_endpoints    API endpoints service.
+     * @return   bool
+     */
+    private static function refresh_access_token( $api_endpoints ) {
+        $refresh_token = self::get_refresh_token();
+
+        if ( ! $refresh_token || ! $api_endpoints || ! method_exists( $api_endpoints, 'refresh_token' ) ) {
+            return false;
+        }
+
+        $response = $api_endpoints->refresh_token( $refresh_token );
+
+        if ( ! $response || ! method_exists( $response, 'is_successful' ) || ! $response->is_successful() ) {
+            return false;
+        }
+
+        $data = self::unwrap_response_data( $response->get_data() );
+
+        if ( empty( $data['access_token'] ) ) {
+            return false;
+        }
+
+        self::save_access_token( $data['access_token'] );
+
+        if ( ! empty( $data['refresh_token'] ) ) {
+            self::save_refresh_token( $data['refresh_token'] );
+        }
+
+        return true;
+    }
+
+    /**
+     * Store user and business details from /auth/me.
+     *
+     * @since    1.0.0
+     * @param    array|null    $data    API response data.
+     */
+    private static function store_auth_me_response( $data ) {
+        $data = self::unwrap_response_data( $data );
+
+        if ( ! is_array( $data ) ) {
+            return;
+        }
+
+        if ( ! empty( $data['user'] ) && is_array( $data['user'] ) ) {
+            self::save_user_info( $data['user'] );
+        }
+
+        if ( array_key_exists( 'business', $data ) ) {
+            if ( ! empty( $data['business'] ) && is_array( $data['business'] ) ) {
+                self::save_business_via_manager( $data['business'], 'auth_check' );
+            } else {
+                self::clear_business_via_manager();
+            }
+        }
+    }
+
+    /**
+     * Save business data through the business manager when available.
+     *
+     * This keeps token and webhook resubscription hooks centralized.
+     *
+     * @since    1.0.0
+     * @param    array     $business_data    Business data.
+     * @param    string    $source           Change source.
+     */
+    private static function save_business_via_manager( $business_data, $source = 'auth_check' ) {
+        $plugin           = class_exists( 'Wp_Dialyra' ) ? Wp_Dialyra::get_instance() : null;
+        $business_manager = $plugin && method_exists( $plugin, 'get_business_manager' ) ? $plugin->get_business_manager() : null;
+
+        if ( $business_manager && method_exists( $business_manager, 'save_connected_business_data' ) ) {
+            $business_manager->save_connected_business_data( $business_data, $source );
+            return;
+        }
+
+        if ( ! empty( $business_data['id'] ) ) {
+            self::save_business_id( $business_data['id'] );
+        }
+
+        if ( defined( 'WP_DIALYRA_OPTION_BUSINESS_DATA' ) ) {
+            update_option( WP_DIALYRA_OPTION_BUSINESS_DATA, self::sanitize_data( $business_data ), false );
+        }
+    }
+
+    /**
+     * Clear business data through the business manager when available.
+     *
+     * @since    1.0.0
+     */
+    private static function clear_business_via_manager() {
+        $plugin           = class_exists( 'Wp_Dialyra' ) ? Wp_Dialyra::get_instance() : null;
+        $business_manager = $plugin && method_exists( $plugin, 'get_business_manager' ) ? $plugin->get_business_manager() : null;
+
+        if ( $business_manager && method_exists( $business_manager, 'clear_connected_business' ) ) {
+            $business_manager->clear_connected_business();
+            return;
+        }
+
+        self::remove_business_id();
+
+        if ( defined( 'WP_DIALYRA_OPTION_BUSINESS_DATA' ) ) {
+            delete_option( WP_DIALYRA_OPTION_BUSINESS_DATA );
+        }
+    }
+
+    /**
+     * Check whether /auth/me returned an inactive account or business.
+     *
+     * @since    1.0.0
+     * @param    array|null    $data    API response data.
+     * @return   bool
+     */
+    private static function response_contains_inactive_account( $data ) {
+        $data = self::unwrap_response_data( $data );
+
+        if ( ! is_array( $data ) ) {
+            return false;
+        }
+
+        $user_status = ! empty( $data['user']['status'] ) ? sanitize_key( $data['user']['status'] ) : 'active';
+
+        if ( in_array( $user_status, array( 'inactive', 'suspended', 'deleted' ), true ) ) {
+            return true;
+        }
+
+        $business_status = ! empty( $data['business']['status'] ) ? sanitize_key( $data['business']['status'] ) : 'active';
+
+        return in_array( $business_status, array( 'inactive', 'suspended', 'deleted' ), true );
+    }
+
+    /**
+     * Unwrap API data objects that use a nested data envelope.
+     *
+     * @since    1.0.0
+     * @param    mixed    $data    API response data.
+     * @return   mixed
+     */
+    private static function unwrap_response_data( $data ) {
+        if ( is_array( $data ) && isset( $data['data'] ) && is_array( $data['data'] ) ) {
+            return $data['data'];
+        }
+
+        return $data;
+    }
+
+    /**
+     * Build a normalized auth validation result.
+     *
+     * @since    1.0.0
+     * @param    bool      $valid     Whether session remains valid.
+     * @param    string    $reason    Reason code.
+     * @return   array
+     */
+    private static function auth_validation_result( $valid, $reason ) {
+        return array(
+            'valid'  => (bool) $valid,
+            'reason' => sanitize_key( $reason ),
+        );
+    }
+
+    /**
+     * Map hard auth status codes to redirect reason codes.
+     *
+     * @since    1.0.0
+     * @param    int    $status_code    HTTP status code.
+     * @return   string
+     */
+    private static function auth_failure_reason_for_status( $status_code ) {
+        $status_code = absint( $status_code );
+
+        if ( 401 === $status_code ) {
+            return 'unauthorized';
+        }
+
+        if ( 403 === $status_code ) {
+            return 'forbidden';
+        }
+
+        if ( 404 === $status_code ) {
+            return 'auth_not_found';
+        }
+
+        return 'expired';
+    }
+
+    /**
+     * Normalize saved bearer tokens for consistent Authorization headers.
+     *
+     * @since    1.0.0
+     * @param    mixed    $token    Raw token.
+     * @return   string
+     */
+    private static function normalize_token( $token ) {
+        $token = is_string( $token ) ? trim( $token ) : '';
+        $token = preg_replace( '/^Bearer\s+/i', '', $token );
+
+        return sanitize_text_field( trim( $token ) );
+    }
+
+    /**
+     * Get the currently configured API base URL.
+     *
+     * @since    1.0.0
+     * @return   string
+     */
+    private static function current_api_base_url() {
+        return defined( 'DIALYRA_API_BASE_URL' ) ? untrailingslashit( esc_url_raw( DIALYRA_API_BASE_URL ) ) : '';
+    }
+
+    /**
+     * Check whether saved auth belongs to a different API environment.
+     *
+     * @since    1.0.0
+     * @return   bool
+     */
+    private static function auth_base_url_changed() {
+        $saved_base_url   = untrailingslashit( esc_url_raw( get_option( self::AUTH_BASE_URL_OPTION, '' ) ) );
+        $current_base_url = self::current_api_base_url();
+
+        return '' !== $saved_base_url && '' !== $current_base_url && $saved_base_url !== $current_base_url;
     }
 
     /**

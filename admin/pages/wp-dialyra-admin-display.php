@@ -38,6 +38,36 @@ if ( ! isset( $wp_dialyra_pages[ $wp_dialyra_current_page ] ) ) {
 	$wp_dialyra_current_page = 'dashboard';
 }
 
+$wp_dialyra_plugin = class_exists( 'Wp_Dialyra' ) ? Wp_Dialyra::get_instance() : null;
+
+if ( class_exists( 'Dialyra_Auth_Manager' ) ) {
+	if ( 'login' !== $wp_dialyra_current_page && ! Dialyra_Auth_Manager::is_logged_in() ) {
+		Dialyra_Auth_Manager::clear_authentication();
+		wp_safe_redirect( Dialyra_Auth_Manager::get_login_url() );
+		exit;
+	}
+
+	if ( 'login' !== $wp_dialyra_current_page && Dialyra_Auth_Manager::is_logged_in() ) {
+		$wp_dialyra_auth_validation = Dialyra_Auth_Manager::validate_session_if_due( $wp_dialyra_plugin ? $wp_dialyra_plugin->get_api_endpoints() : null );
+
+		if ( empty( $wp_dialyra_auth_validation['valid'] ) ) {
+			wp_safe_redirect(
+				add_query_arg(
+					'dialyra_auth',
+					! empty( $wp_dialyra_auth_validation['reason'] ) ? sanitize_key( $wp_dialyra_auth_validation['reason'] ) : 'expired',
+					Dialyra_Auth_Manager::get_login_url()
+				)
+			);
+			exit;
+		}
+	}
+
+	if ( Dialyra_Auth_Manager::is_logged_in() && ! Dialyra_Auth_Manager::is_setup_complete() && ! in_array( $wp_dialyra_current_page, array( 'setup', 'login' ), true ) ) {
+		wp_safe_redirect( admin_url( 'admin.php?page=wp-dialyra&p=setup' ) );
+		exit;
+	}
+}
+
 $wp_dialyra_page_path = plugin_dir_path( __FILE__ ) . 'views/' . $wp_dialyra_pages[ $wp_dialyra_current_page ];
 $wp_dialyra_is_setup_complete = class_exists( 'Dialyra_Auth_Manager' ) ? Dialyra_Auth_Manager::is_setup_complete() : false;
 $wp_dialyra_is_logged_in = class_exists( 'Dialyra_Auth_Manager' ) ? Dialyra_Auth_Manager::is_logged_in() : false;
@@ -74,6 +104,16 @@ $wp_dialyra_footer_webhook_class = $wp_dialyra_is_setup_complete && $wp_dialyra_
 					<a class="wp-dialyra-nav-link <?php echo 'test-tools' === $wp_dialyra_current_page ? 'wp-dialyra-nav-link--active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=test-tools' ) ); ?>"><?php esc_html_e( 'Test Tools', 'wp-dialyra' ); ?></a>
 					<a class="wp-dialyra-nav-link <?php echo 'settings' === $wp_dialyra_current_page ? 'wp-dialyra-nav-link--active' : ''; ?>" href="<?php echo esc_url( admin_url( 'admin.php?page=wp-dialyra&p=settings' ) ); ?>"><?php esc_html_e( 'Settings', 'wp-dialyra' ); ?></a>
 				</nav>
+				<?php if ( $wp_dialyra_is_logged_in ) : ?>
+					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+						<?php wp_nonce_field( 'wp_dialyra_logout' ); ?>
+						<input type="hidden" name="action" value="wp_dialyra_logout">
+						<button type="submit" class="wp-dialyra-button wp-dialyra-button--ghost">
+							<span class="dashicons dashicons-exit" aria-hidden="true"></span>
+							<?php esc_html_e( 'Logout', 'wp-dialyra' ); ?>
+						</button>
+					</form>
+				<?php endif; ?>
 			<?php endif; ?>
 			<span class="wp-dialyra-status <?php echo $wp_dialyra_is_setup_complete ? 'wp-dialyra-status--ready' : 'wp-dialyra-status--pending'; ?>"><?php echo esc_html( $wp_dialyra_is_setup_complete ? __( 'Setup ready', 'wp-dialyra' ) : __( 'Setup required', 'wp-dialyra' ) ); ?></span>
 		</div>

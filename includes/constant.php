@@ -18,7 +18,7 @@ if ( ! defined( 'WP_DIALYRA_OPTION_ACCESS_TOKEN' ) ) {
 }
 
 if ( ! defined( 'WP_DIALYRA_LOCAL_API_BASE_URL' ) ) {
-	define( 'WP_DIALYRA_LOCAL_API_BASE_URL', 'http://127.0.0.1:5001/api' );
+	define( 'WP_DIALYRA_LOCAL_API_BASE_URL', 'https://api.dialyra.it.com/api' );
 }
 
 if ( ! defined( 'WP_DIALYRA_LIVE_API_BASE_URL' ) ) {
@@ -39,6 +39,18 @@ if ( ! defined( 'WP_DIALYRA_OPTION_BUSINESS_ID' ) ) {
 
 if ( ! defined( 'WP_DIALYRA_OPTION_USER_INFO' ) ) {
 	define( 'WP_DIALYRA_OPTION_USER_INFO', 'dialyra_user_info' );
+}
+
+if ( ! defined( 'WP_DIALYRA_OPTION_LAST_AUTH_CHECK_AT' ) ) {
+	define( 'WP_DIALYRA_OPTION_LAST_AUTH_CHECK_AT', 'dialyra_last_auth_check_at' );
+}
+
+if ( ! defined( 'WP_DIALYRA_OPTION_AUTH_BASE_URL' ) ) {
+	define( 'WP_DIALYRA_OPTION_AUTH_BASE_URL', 'dialyra_auth_base_url' );
+}
+
+if ( ! defined( 'WP_DIALYRA_AUTH_CHECK_INTERVAL' ) ) {
+	define( 'WP_DIALYRA_AUTH_CHECK_INTERVAL', 15 * 60 );
 }
 
 if ( ! defined( 'WP_DIALYRA_OPTION_SITE_ACCESS_TOKEN' ) ) {

@@ -411,7 +411,31 @@ class Wp_Dialyra {
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_styles' );
 		$this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
 		$this->loader->add_action( 'admin_post_wp_dialyra_stream_audio', $plugin_admin, 'stream_audio_asset' );
+		$this->loader->add_action( 'admin_post_wp_dialyra_logout', $this, 'handle_logout' );
 
+	}
+
+	public function handle_logout() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You are not allowed to disconnect Dialyra.', 'wp-dialyra' ), '', array( 'response' => 403 ) );
+		}
+
+		if ( 'POST' !== ( $_SERVER['REQUEST_METHOD'] ?? '' ) ) {
+			wp_die( esc_html__( 'Logout requires a POST request.', 'wp-dialyra' ), '', array( 'response' => 405 ) );
+		}
+
+		check_admin_referer( 'wp_dialyra_logout' );
+		$refresh_token = Dialyra_Auth_Manager::get_refresh_token();
+
+		try {
+			if ( $refresh_token && $this->api_endpoints ) {
+				$this->api_endpoints->logout( $refresh_token );
+			}
+		} finally {
+			Dialyra_Auth_Manager::clear_authentication();
+			wp_safe_redirect( Dialyra_Auth_Manager::get_login_url() );
+			exit;
+		}
 	}
 
 	/**
@@ -497,6 +521,7 @@ class Wp_Dialyra {
 		$this->loader->add_action( 'init', $scheduler_entrypoints, 'ensure_recurring_actions' );
 		$this->loader->add_action( Dialyra_Scheduler_Entrypoints::get_call_queue_hook(), $scheduler_entrypoints, 'process_call_queue' );
 		$this->loader->add_action( Dialyra_Scheduler_Entrypoints::get_retry_queue_hook(), $scheduler_entrypoints, 'process_retry_queue' );
+		$this->loader->add_action( Dialyra_Scheduler_Entrypoints::get_call_history_sync_hook(), $scheduler_entrypoints, 'sync_oldest_initiated_call' );
 
 	}
 
@@ -625,6 +650,26 @@ class Wp_Dialyra {
 	 */
 	public function get_call_originate_service() {
 		return $this->call_originate_service;
+	}
+
+	/**
+	 * Get the call log repository.
+	 *
+	 * @since     1.0.0
+	 * @return    Dialyra_Call_Log_Repository
+	 */
+	public function get_call_log_repository() {
+		return $this->call_log_repository;
+	}
+
+	/**
+	 * Get the audit log repository.
+	 *
+	 * @since     1.0.0
+	 * @return    Dialyra_Audit_Log_Repository
+	 */
+	public function get_audit_log_repository() {
+		return $this->audit_log_repository;
 	}
 
 	/**

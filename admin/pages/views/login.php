@@ -14,6 +14,18 @@ if ( ! defined( 'WPINC' ) ) {
 $wp_dialyra_login_error = null;
 $wp_dialyra_login_email = '';
 
+if ( isset( $_GET['dialyra_auth'] ) ) {
+	$wp_dialyra_auth_reason = sanitize_key( wp_unslash( $_GET['dialyra_auth'] ) );
+
+	if ( in_array( $wp_dialyra_auth_reason, array( 'inactive_account', 'forbidden' ), true ) ) {
+		$wp_dialyra_login_error = esc_html__( 'Your Dialyra account or business is not active. Please contact Dialyra support.', 'wp-dialyra' );
+	} elseif ( 'auth_not_found' === $wp_dialyra_auth_reason ) {
+		$wp_dialyra_login_error = esc_html__( 'Dialyra could not verify this saved session. Please sign in again.', 'wp-dialyra' );
+	} elseif ( in_array( $wp_dialyra_auth_reason, array( 'unauthorized', 'missing_token', 'expired' ), true ) ) {
+		$wp_dialyra_login_error = esc_html__( 'Your Dialyra session expired. Please sign in again.', 'wp-dialyra' );
+	}
+}
+
 if ( class_exists( 'Dialyra_Auth_Manager' ) && Dialyra_Auth_Manager::is_logged_in() ) {
 	$wp_dialyra_redirect_url = Dialyra_Auth_Manager::get_business_id() ? admin_url( 'admin.php?page=wp-dialyra&p=dashboard' ) : admin_url( 'admin.php?page=wp-dialyra&p=setup' );
 	wp_safe_redirect( $wp_dialyra_redirect_url );
@@ -57,6 +69,16 @@ if ( 'POST' === strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_M
 				if ( $wp_dialyra_business_manager ) {
 					$wp_dialyra_business_manager->save_connected_business_data( $wp_dialyra_login_data['business'], 'login' );
 				}
+			}
+
+			Dialyra_Auth_Manager::touch_auth_check();
+
+			$wp_dialyra_business_manager = isset( $wp_dialyra_business_manager ) ? $wp_dialyra_business_manager : ( $wp_dialyra_plugin ? $wp_dialyra_plugin->get_business_manager() : null );
+
+			if ( $wp_dialyra_business_manager && method_exists( $wp_dialyra_business_manager, 'load_balance' ) ) {
+				$wp_dialyra_business_manager->load_balance();
+			} else {
+				do_action( class_exists( 'Dialyra_Hook_Names' ) ? Dialyra_Hook_Names::get_or_default( 'business', 'balance_load_requested', 'wp_dialyra_load_balance' ) : 'wp_dialyra_load_balance' );
 			}
 
 			wp_safe_redirect( Dialyra_Auth_Manager::get_business_id() ? admin_url( 'admin.php?page=wp-dialyra&p=dashboard' ) : admin_url( 'admin.php?page=wp-dialyra&p=setup' ) );

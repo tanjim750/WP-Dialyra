@@ -13,6 +13,100 @@ if ( ! defined( 'WPINC' ) ) {
 
 class Wp_Dialyra_Utils {
 
+	public static function get_initiated_calls( $limit = 100 ) {
+		global $wpdb;
+
+		$limit      = max( 1, (int) $limit );
+		$table_name = $wpdb->prefix . 'dialyra_call_logs';
+		$rows       = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT * FROM {$table_name}
+				WHERE status = %s AND order_id > 0
+				AND (remote_call_log_id > 0 OR call_session_id > 0 OR (action_id IS NOT NULL AND TRIM(action_id) <> ''))
+				ORDER BY created_at ASC, id ASC LIMIT %d",
+				'initiated',
+				$limit
+			),
+			ARRAY_A
+		);
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	public static function get_updated_call_state( $local_log_id ) {
+		$local_log_id = (int) $local_log_id;
+
+		if ( $local_log_id < 1 ) {
+			return new WP_Error( 'dialyra_invalid_call_id', __( 'A valid local call log ID is required.', 'wp-dialyra' ) );
+		}
+
+		$plugin = class_exists( 'Wp_Dialyra' ) ? Wp_Dialyra::get_instance() : null;
+
+		if ( ! $plugin || ! $plugin->get_api_endpoints() || ! $plugin->get_call_log_repository() ) {
+			return new WP_Error( 'dialyra_call_service_unavailable', __( 'Dialyra call service is not available.', 'wp-dialyra' ) );
+		}
+
+		$call = $plugin->get_call_log_repository()->get_log( $local_log_id );
+
+		if ( empty( $call ) ) {
+			return new WP_Error( 'dialyra_call_not_found', __( 'Local call log was not found.', 'wp-dialyra' ) );
+		}
+
+		$query   = array();
+		$call_id = null;
+
+		if ( ! empty( $call['action_id'] ) ) {
+			$query['action_id'] = sanitize_text_field( $call['action_id'] );
+		} elseif ( ! empty( $call['call_session_id'] ) ) {
+			$query['call_session_id'] = absint( $call['call_session_id'] );
+		} elseif ( ! empty( $call['remote_call_log_id'] ) ) {
+			$call_id = absint( $call['remote_call_log_id'] );
+		} else {
+			return new WP_Error( 'dialyra_call_identifier_missing', __( 'This call has no remote identifier to fetch its current state.', 'wp-dialyra' ) );
+		}
+
+		$response = $plugin->get_api_endpoints()->get_call_history( $call_id, $query );
+
+		if ( ! $response->is_successful() ) {
+			return new WP_Error( 'dialyra_call_state_fetch_failed', $response->get_message(), array( 'status' => $response->get_status_code() ) );
+		}
+
+		return $response->get_data();
+	}
+
+	public static function update_local_call_record( $local_log_id, $call_state ) {
+		$local_log_id = (int) $local_log_id;
+
+		if ( $local_log_id < 1 ) {
+			return new WP_Error( 'dialyra_invalid_call_id', __( 'A valid local call log ID is required.', 'wp-dialyra' ) );
+		}
+
+		if ( is_wp_error( $call_state ) ) {
+			return $call_state;
+		}
+
+		if ( ! is_array( $call_state ) || empty( $call_state['status'] ) || ! is_string( $call_state['status'] ) ) {
+			return new WP_Error( 'dialyra_invalid_call_state', __( 'Call history data with a valid status is required.', 'wp-dialyra' ) );
+		}
+
+		$plugin     = class_exists( 'Wp_Dialyra' ) ? Wp_Dialyra::get_instance() : null;
+		$repository = $plugin ? $plugin->get_call_log_repository() : null;
+
+		if ( ! $repository ) {
+			return new WP_Error( 'dialyra_call_service_unavailable', __( 'Dialyra call service is not available.', 'wp-dialyra' ) );
+		}
+
+		if ( empty( $repository->get_log( $local_log_id ) ) ) {
+			return new WP_Error( 'dialyra_call_not_found', __( 'Local call log was not found.', 'wp-dialyra' ) );
+		}
+
+		if ( ! $repository->sync_from_history_response( $local_log_id, $call_state ) ) {
+			return new WP_Error( 'dialyra_call_update_failed', __( 'The local call log could not be updated.', 'wp-dialyra' ) );
+		}
+
+		return true;
+	}
+
 	/**
 	 * Get the default setup values used by the plugin.
 	 *
@@ -170,7 +264,7 @@ class Wp_Dialyra_Utils {
 	public static function get_api_defaults() {
 		return array(
 			'base_url' => defined( 'DIALYRA_API_BASE_URL' ) ? DIALYRA_API_BASE_URL : 'https://api.dialyra.it.com/api',
-			'version'  => 'v2',
+			'version'  => 'v3',
 			'timeout'  => 30,
 		);
 	}
