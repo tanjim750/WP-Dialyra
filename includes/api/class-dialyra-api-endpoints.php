@@ -520,6 +520,17 @@ class Dialyra_API_Endpoints {
     }
 
     /**
+     * Originate an agent-side call using the authenticated user token.
+     *
+     * @since    1.0.0
+     * @param    array     $payload    Agent call originate payload.
+     * @return   Dialyra_API_Response  The API response.
+     */
+    public function originate_agent_call( $payload ) {
+        return $this->client->post( 'agents/calls/originate', $this->sanitize_agent_call_originate_payload( $payload ) );
+    }
+
+    /**
      * Get a single call history record.
      *
      * @since    1.0.0
@@ -1273,6 +1284,42 @@ class Dialyra_API_Endpoints {
 
         if ( isset( $payload['webhook_variables'] ) && is_array( $payload['webhook_variables'] ) ) {
             $payload['webhook_variables'] = $this->sanitize_payload( $payload['webhook_variables'] );
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Sanitize an agent-side call originate payload.
+     *
+     * @since    1.0.0
+     * @param    array     $payload_data    Raw originate payload.
+     * @return   array
+     */
+    private function sanitize_agent_call_originate_payload( $payload_data ) {
+        $payload = $this->sanitize_allowed_payload( $payload_data, array(
+            'business_id',
+            'from_extension',
+            'to',
+            'to_type',
+            'sip_trunk_id',
+            'timeout_seconds',
+        ) );
+
+        foreach ( array( 'business_id', 'sip_trunk_id', 'timeout_seconds' ) as $integer_field ) {
+            if ( isset( $payload[ $integer_field ] ) ) {
+                $payload[ $integer_field ] = absint( $payload[ $integer_field ] );
+            }
+        }
+
+        foreach ( array( 'from_extension', 'to' ) as $text_field ) {
+            if ( isset( $payload[ $text_field ] ) ) {
+                $payload[ $text_field ] = sanitize_text_field( $payload[ $text_field ] );
+            }
+        }
+
+        if ( isset( $payload['to_type'] ) ) {
+            $payload['to_type'] = in_array( $payload['to_type'], array( 'extension', 'external_number' ), true ) ? $payload['to_type'] : 'extension';
         }
 
         return $payload;
