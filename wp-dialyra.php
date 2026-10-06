@@ -9,14 +9,14 @@
  * that starts the plugin.
  *
  * @link              https://triizync.com
- * @since             1.0.0
+ * @since             1.0.1
  * @package           Wp_Dialyra
  *
  * @wordpress-plugin
  * Plugin Name:       WP Dialyra
  * Plugin URI:        https://dialyra.it.com
  * Description:       The purpose of the WP Dialyra is to connect a WooCommerce store with Dialyra so the store can automatically and manually place customer calls around orders.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Author:            Trizync Solution
  * Author URI:        https://triizync.com/
  * License:           GPL-2.0+
@@ -35,13 +35,13 @@ if ( ! defined( 'WPINC' ) ) {
  * Start at version 1.0.0 and use SemVer - https://semver.org
  * Rename this for your plugin and update it as you release new versions.
  */
-define( 'WP_DIALYRA_VERSION', '1.0.0' );
+define( 'WP_DIALYRA_VERSION', '1.0.1' );
 
 /**
  * Enable plugin-owned audit logging and the hidden audit log page.
  */
 if ( ! defined( 'WP_DIALYRA_DEBUG_MODE' ) ) {
-	define( 'WP_DIALYRA_DEBUG_MODE', false );
+	define( 'WP_DIALYRA_DEBUG_MODE', true );
 }
 
 /**
@@ -88,7 +88,7 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-wp-dialyra.php';
  * then kicking off the plugin from this point in the file does
  * not affect the page life cycle.
  *
- * @since    1.0.0
+ * @since    1.0.1
  */
 function run_wp_dialyra() {
 
