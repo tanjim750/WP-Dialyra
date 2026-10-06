@@ -210,7 +210,7 @@ $wp_dialyra_business_where = $wp_dialyra_business_id ? $wpdb->prepare( ' AND bus
 $wp_dialyra_today_calls = $wp_dialyra_has_calls ? absint(
 	$wpdb->get_var(
 		$wpdb->prepare(
-			"SELECT COUNT(*) FROM {$wp_dialyra_call_table} WHERE created_at >= %s{$wp_dialyra_business_where}",
+			"SELECT COUNT(*) FROM {$wp_dialyra_call_table} WHERE created_at >= %s AND status = 'completed'{$wp_dialyra_business_where}",
 			$wp_dialyra_today_start
 		)
 	)
@@ -219,8 +219,17 @@ $wp_dialyra_today_calls = $wp_dialyra_has_calls ? absint(
 $wp_dialyra_yesterday_calls = $wp_dialyra_has_calls ? absint(
 	$wpdb->get_var(
 		$wpdb->prepare(
-			"SELECT COUNT(*) FROM {$wp_dialyra_call_table} WHERE created_at >= %s AND created_at < %s{$wp_dialyra_business_where}",
+			"SELECT COUNT(*) FROM {$wp_dialyra_call_table} WHERE created_at >= %s AND created_at < %s AND status = 'completed'{$wp_dialyra_business_where}",
 			date( 'Y-m-d 00:00:00', current_time( 'timestamp' ) - DAY_IN_SECONDS ),
+			$wp_dialyra_today_start
+		)
+	)
+) : 0;
+
+$wp_dialyra_today_attempts = $wp_dialyra_has_calls ? absint(
+	$wpdb->get_var(
+		$wpdb->prepare(
+			"SELECT COUNT(*) FROM {$wp_dialyra_call_table} WHERE created_at >= %s AND status IN ('initiated', 'ringing', 'answered', 'completed', 'failed', 'busy', 'no_answer', 'canceled', 'cancelled'){$wp_dialyra_business_where}",
 			$wp_dialyra_today_start
 		)
 	)
@@ -229,7 +238,7 @@ $wp_dialyra_yesterday_calls = $wp_dialyra_has_calls ? absint(
 $wp_dialyra_today_answered = $wp_dialyra_has_calls ? absint(
 	$wpdb->get_var(
 		$wpdb->prepare(
-			"SELECT COUNT(*) FROM {$wp_dialyra_call_table} WHERE created_at >= %s AND (status = 'completed' OR call_status = 'answer'){$wp_dialyra_business_where}",
+			"SELECT COUNT(*) FROM {$wp_dialyra_call_table} WHERE created_at >= %s AND (status IN ('answered', 'completed') OR call_status = 'answer') AND status IN ('initiated', 'ringing', 'answered', 'completed', 'failed', 'busy', 'no_answer', 'canceled', 'cancelled'){$wp_dialyra_business_where}",
 			$wp_dialyra_today_start
 		)
 	)
@@ -238,7 +247,7 @@ $wp_dialyra_today_answered = $wp_dialyra_has_calls ? absint(
 $wp_dialyra_today_confirmed = $wp_dialyra_has_calls ? absint(
 	$wpdb->get_var(
 		$wpdb->prepare(
-			"SELECT COUNT(*) FROM {$wp_dialyra_call_table} WHERE created_at >= %s AND metadata LIKE %s{$wp_dialyra_business_where}",
+			"SELECT COUNT(DISTINCT order_id) FROM {$wp_dialyra_call_table} WHERE created_at >= %s AND status = 'completed' AND order_id > 0 AND metadata LIKE %s{$wp_dialyra_business_where}",
 			$wp_dialyra_today_start,
 			'%"order_action":"confirmed"%'
 		)
@@ -267,7 +276,7 @@ $wp_dialyra_next_queue_time = $wp_dialyra_has_queue ? $wpdb->get_var(
 	"SELECT scheduled_at FROM {$wp_dialyra_queue_table} WHERE status IN ('pending', 'processing'){$wp_dialyra_business_where} ORDER BY scheduled_at ASC, id ASC LIMIT 1"
 ) : '';
 
-$wp_dialyra_answer_rate  = $wp_dialyra_percent( $wp_dialyra_today_answered, $wp_dialyra_today_calls );
+$wp_dialyra_answer_rate  = $wp_dialyra_percent( $wp_dialyra_today_answered, $wp_dialyra_today_attempts );
 $wp_dialyra_confirm_rate = $wp_dialyra_percent( $wp_dialyra_today_confirmed, $wp_dialyra_today_calls );
 $wp_dialyra_call_delta   = $wp_dialyra_today_calls - $wp_dialyra_yesterday_calls;
 
@@ -295,7 +304,7 @@ if ( $wp_dialyra_has_calls ) {
 		$count     = absint(
 			$wpdb->get_var(
 				$wpdb->prepare(
-					"SELECT COUNT(*) FROM {$wp_dialyra_call_table} WHERE created_at >= %s AND created_at < %s{$wp_dialyra_business_where}",
+					"SELECT COUNT(*) FROM {$wp_dialyra_call_table} WHERE created_at >= %s AND created_at < %s AND status = 'completed'{$wp_dialyra_business_where}",
 					$day_start,
 					$day_end
 				)
